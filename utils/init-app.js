@@ -2,7 +2,7 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 const http = require('http');
 const cors = require('cors');
-const initPassport = require('./utils/init-passport');
+const initPassport = require('./init-passport');
 
 // Export the function to set up the app
 module.exports = (express) => {
