@@ -1,6 +1,6 @@
 # VinBuddies API v1 guide #
 
-##Set up##
+## Set up ##
 Simply run `npm install` to install the dependency.
 
 Also install the postgresql as the database
@@ -48,7 +48,7 @@ At last, run `node app.js` to start the server.
 | POST | /signup   | { email: string, name: string, password: string } | Local signup | 'LOGIN_SUCCESSFUL'|
 | POST | /facebook | { access_Token : string } | Facebook login, register in data if first visit | { token: string } |
 
-###Local signup example###
+### Local signup example ###
 ```
 curl -i -X POST \
     -H "Content-Type:application/json" \
@@ -59,7 +59,7 @@ curl -i -X POST \
         }' \
     http://localhost:8080/api/v1/auth/signup/ 
 ```
-###Local login example###
+### Local login example ###
 ```
 curl -i -X POST \
     -H "Content-Type:application/json" \
@@ -69,7 +69,7 @@ curl -i -X POST \
         }' \
     http://localhost:8080/api/v1/auth/login/ 
 ```
-###Facebook login###
+### Facebook login ###
 ```
 curl -i -X POST \
     -H "Content-Type:application/json" \
