@@ -19,7 +19,7 @@ class LoginService {
         if (user.id > 0) {
             throw new Error(SIGNUP_STATUS.USER_EXIST);
         } else if (user.id < 0) {
-            throw new Error(SIGNUP_STATUS.SERVERERROR);
+            throw new Error(SIGNUP_STATUS.SERVER_ERROR);
         }
 
         let password = await bcrypt.hashPassword(reqBody.password);
@@ -31,7 +31,7 @@ class LoginService {
         });
 
         if (status < 0) {
-            throw new Error(SIGNUP_STATUS.SERVERERROR);
+            throw new Error(SIGNUP_STATUS.SERVER_ERROR);
         }
 
         return SIGNUP_STATUS.SUCCESSFUL;
@@ -43,11 +43,10 @@ class LoginService {
             email: reqBody.email,
             provider: 'local'
         });
-
         if (user.id === 0) {
-            throw new Error(LOGIN_STATUS.NOUSER);
+            throw new Error(LOGIN_STATUS.NO_USER);
         } else if (user.id < 0) {
-            throw new Error(LOGIN_STATUS.SERVERERROR);
+            throw new Error(LOGIN_STATUS.SERVER_ERROR);
         }
 
         let Validity = await bcrypt.checkPassword(reqBody.password, user.password);
@@ -64,17 +63,15 @@ class LoginService {
 
     async facebookLogin(reqBody) {
         if (!reqBody.access_token) {
-            throw new Error(LOGIN_STATUS.NOACCESSTOKEN);
+            throw new Error(LOGIN_STATUS.NO_ACCESSTOKEN);
         };
 
         let accessToken = reqBody.access_token;
-        let data = await axios({
-            method: 'get',
-            url:`https://graph.facebook.com/me?access_token=${accessToken}`})
+        let data = await axios(`https://graph.facebook.com/me?access_token=${accessToken}`)
             .catch((err) => {
-                throw new Error(LOGIN_STATUS.NOACCESSTOKEN);
+                throw new Error(LOGIN_STATUS.NO_ACCESSTOKEN);
             });
-            
+
         let user = await this.findUser({
             social_id: data.data.id,
             provider: 'facebook'
@@ -91,30 +88,15 @@ class LoginService {
         });
 
         if (status < 0) {
-            throw new Error(LOGIN_STATUS.SERVERERROR);
-        } 
+            throw new Error(LOGIN_STATUS.SERVER_ERROR);
+        }
 
-        return this.jwtEncode({ id: status.id });    
-    }
-
-    jwtEncode(payload) {
-        let token = jwt.encode(payload, config.jwtSecret);
-        return { token: token };
+        return this.jwtEncode({ id: status.id });
     }
 
     findUser(user) {
         return this.knex('users').first('id', 'name', 'password').where(user)
-            .then((userInfo) => {
-
-                if (typeof userInfo === 'undefined') {
-                    return { id: 0 };
-                }
-                return {
-                    id: userInfo.id,
-                    name: userInfo.name,
-                    password: userInfo.password
-                };
-            })
+            .then((userInfo) => (typeof userInfo === 'undefined') ? { id: 0 } : userInfo)
             .catch((err) => {
                 console.log(err);
                 return { id: -1 };
@@ -123,13 +105,16 @@ class LoginService {
 
     createUser(user) {
         return this.knex('users').insert(user).returning('id')
-            .then((userId) => {
-                return { id: userId[0] }
-            })
+            .then((userId) => ({ id: userId[0] }))
             .catch((err) => {
                 console.log(err);
                 return { id: -1 };
             });
+    }
+
+    jwtEncode(payload) {
+        let token = jwt.encode(payload, config.jwtSecret);
+        return { token: token };
     }
 }
 
