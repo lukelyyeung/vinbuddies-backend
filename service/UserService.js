@@ -6,71 +6,72 @@ class UserService {
         this.knex = knex;
     }
 
-    getUser(userId) {
-        return this.knex('users')
-            .first('id', userId)
-            .then(userInfo => {
-                if (typeof userInfo === 'undefined') {
-                    throw new Error(USER_STATUS.NO_USER);
-                };
-                return userInfo[0];
-            })
-            .catch(err => {
-                console.log(err);
-                throw new Error(USER_STATUS.SERVER_ERROR);
-            })
+    async getUser(userId) {
+        try {
+
+            let userInfo = await this.knex('users').first('id', userId);
+            if (typeof userInfo === 'undefined') {
+                throw new Error(USER_STATUS.NO_USER);
+            };
+
+            return userInfo[0];
+
+        } catch (err) {
+            console.log(err);
+            throw new Error(USER_STATUS.SERVER_ERROR);
+        };
     }
 
-    getAllUser() {
-        return this.knex('users').select("*")
-            .then(user => {
-                if (user.length <= 0) {
-                    throw new Error(USER_STATUS.NO_USER);
-                };
-            })
+    async getAllUser() {
+        let user = await this.knex('users').select("*")
+        if (user.length <= 0) {
+            throw new Error(USER_STATUS.NO_USER);
+        };
     }
 
     async createUser(reqBody) {
         const userInfo = await this.tidyUpUserProfile(reqBody);
+        try {
 
-        return this.knex('users')
-            .insert(userInfo)
-            .returning('id')
-            .then((userId) => ({
-                userId: userId[0], status: USER_STATUS.CREATE_SUCCESSFUL
-            }))
-            .catch(err => {
-                //* thorw error if the insertion violate the unique composite key *
-                if (err.code === '23505') {
-                    throw new Error(USER_STATUS.USER_EXIST);
-                }
-                console.log(err);
-                throw new Error(USER_STATUS.SERVER_ERROR);
-            });
+            let userId = await this.knex('users').insert(userInfo).returning('id')
+            return { 
+                userId: userId[0], 
+                status: USER_STATUS.CREATE_SUCCESSFUL
+            };
+
+        } catch(err) {
+            //* thorw error if the insertion violate the unique composite key *
+            if (err.code === '23505') {
+                throw new Error(USER_STATUS.USER_EXIST);
+            }
+            console.log(err);
+            throw new Error(USER_STATUS.SERVER_ERROR);
+        }
     }
 
     async updateUser(userId, reqBody) {
-        const userInfo = await this.tidyUpUserProfile(reqBody);
+        try {
 
-        return this.knex('users')
-            .first({ id: userId })
-            .update(userInfo)
-            .then(() => ({ status: USER_STATUS.UPDATE_SUCCESSFUL }))
-            .catch(err => {
-                console.log(err);
-                throw new Error(USER_STATUS.SERVER_ERROR);
-            });
+            const userInfo = await this.tidyUpUserProfile(reqBody);
+            await this.knex('users').first({ id: userId }).update(userInfo)
+            return { status: USER_STATUS.UPDATE_SUCCESSFUL };
+        
+        } catch (err) {
+            console.log(err);
+            throw new Error(USER_STATUS.SERVER_ERROR);
+        }
     }
 
-    deleteUser(userId) {
-        return this.knex('users')
-            .where({ id: userId })
-            .del()
-            .then(() => ({ status: USER_STATUS.DELETE_SUCCESSFUL }))
-            .catch(err => {
-                console.log(err);
-                throw new Error(USER_STATUS.SERVER_ERROR);
-            });
+    async deleteUser(userId) {
+        try {
+     
+            await this.knex('users').where({ id: userId }).del();
+            return { status: USER_STATUS.DELETE_SUCCESSFUL };
+     
+        } catch (err) {
+            console.log(err);
+            throw new Error(USER_STATUS.SERVER_ERROR);
+        }
     }
 
     async tidyUpUserProfile(reqBody) {

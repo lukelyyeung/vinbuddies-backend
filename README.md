@@ -86,10 +86,10 @@ curl -i -X POST \
 |GET|/all|empty|Get user list|[{ user_id: number, name: string, password: string, socialId: string, provider: string, role: string }]|
 |GET|/:userId|empty|Get particular user|{ user_id: number, name: string, password: string, socialId: string, provider: string, role: string }|
 |POST|/|{ name: string, password: string, socialId: string, provider: string, role: string }|Add user|{userId: userID, status: 'ADD_USER_SUCCESSFUL' }|
-|PATCH|/:userId|{ name: string, password: string, socialId: string, provider: string, role: string }|Update userInfo|{userId: userID, status: 'UPDATE_USER_SUCCESSFUL' }|
+|PATCH|/:userId|{ name: string, password: string, socialId: string, provider: string, role: string }|Update userInfo|{userId: number, status: 'UPDATE_USER_SUCCESSFUL' }|
 |DELETE|/:userId|empty|Delete particular user|{ userId: number, status: 'DELETE_USER_SUCCESSFUL' }|
 
-### api/v1/user/:userId/eventjournal ###
+### api/v1/user/eventjournal ###
 | Method| URL| POST BODY|Description|Expected output|
 |:-----|:----|:---------|:----------|:--------------|
 |||||
@@ -118,16 +118,14 @@ curl -i -X POST \
 ### api/v1/questions ###
 | Method| URL| POST BODY|Description|Expected output|
 |:-----|:----|:---------|:----------|:--------------|
-|||||
-|||||
-|||||
-|||||
+|POST|/|{question: { text: string }, options: [{ text: string, implication: string }]}|Insert new active question| { status: 'CREATE_QUESTION_SUCCESSFUL' }
+|GET|/:questionId|empty|Get particular question|{ status: 'READ_QUESTION_SUCCESSFUL', questionId: number, text, expired: boolean, options: [{ optionId: number, text: string, implication: string, expired: boolean }] }|
+|GET|/allquestion|empty|Get all question|{ status: 'READ_QUESTION_SUCCEFUL', questions: [{questionId: number, text, expired: boolean, options: [{ optionId: number, text: string, implication: string, expired: boolean }] }] }|
+|PATCH|/:questionId|{question: string, option: string[], expired: boolean}|Update particular existing question| { status: 'UPDATE_QUESTION_SUCCESSFUL' } |
 
-### api/v1/questions/options ###
+### api/v1/questions/:questionId/options ###
 | Method| URL| POST BODY|Description|Expected output|
 |:-----|:----|:---------|:----------|:--------------|
-|||||
-|||||
-|||||
-|||||
+|POST|/|options: [{ text: string, implication: string }]|Insert new active option| { status: 'CREATE_OPTION_SUCCESSFUL' }
+|PATCH|/:optionId|{ text: string, implication: string, expired: boolean }|Update parTicular option of a particular question| { status: 'UPDATE_OPTION_SUCCESSFUL' }
 
