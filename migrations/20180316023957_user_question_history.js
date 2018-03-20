@@ -1,5 +1,5 @@
 exports.up = function(knex, Promise) {
-    return knex.schema.createTable('user_question_hisotry', function(table) {
+    return knex.schema.createTable('user_question_history', function(table) {
         table.increments().unique();
         table.integer('user_id').notNullable();
         table.integer('question_id').notNullable();
@@ -12,5 +12,5 @@ exports.up = function(knex, Promise) {
 };
 
 exports.down = function(knex, Promise) {
-    return knex.schema.dropTable('user_question_hisotry');
+    return knex.schema.dropTable('user_question_history');
 };

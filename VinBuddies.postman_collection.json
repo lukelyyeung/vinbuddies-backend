@@ -29,11 +29,11 @@
 									"raw": "{\"email\": \"email\", \"password\": \"password\"}"
 								},
 								"url": {
-									"raw": "localhost:8080/api/v1/auth/signup",
+									"raw": "localhost:3000/api/v1/auth/signup",
 									"host": [
 										"localhost"
 									],
-									"port": "8080",
+									"port": "3000",
 									"path": [
 										"api",
 										"v1",
@@ -60,11 +60,11 @@
 									"raw": "{\"email\": \"email\", \"password\": \"password\"}"
 								},
 								"url": {
-									"raw": "localhost:8080/api/v1/auth/login",
+									"raw": "localhost:3000/api/v1/auth/login",
 									"host": [
 										"localhost"
 									],
-									"port": "8080",
+									"port": "3000",
 									"path": [
 										"api",
 										"v1",
@@ -86,11 +86,11 @@
 									"raw": "{\"access_token\": \"EAAdOLKLZAWIYBAKqayOW1n2EggcgtRZC3LrNQNaIZCvdWfShayCX4KFWNHgiMzvZAdW3OH7awj9PbS7aepRntrtc5Qw9sdGqrHpdFnpZCSTHAbXtzDqTJ3PT1fb9B9Mf5bnramhiiEbw9AN3sGiLEgriswRoqIY7HYziIZAXJKGCc3YTeXbtWKtTxQhUbSdfoOhZACii5pUUq047lAbdqQZAjuPzzxiMHqJmZC7uZAiUn4nQZDZD\"}"
 								},
 								"url": {
-									"raw": "localhost:8080/api/v1/auth/facebook",
+									"raw": "localhost:3000/api/v1/auth/facebook",
 									"host": [
 										"localhost"
 									],
-									"port": "8080",
+									"port": "3000",
 									"path": [
 										"api",
 										"v1",

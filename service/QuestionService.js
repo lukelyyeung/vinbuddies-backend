@@ -12,10 +12,9 @@ class QuestionService {
 
         try {
             await this.knex.transaction(async (trx) => {
-
-                questionId = await this.insertQuestion(trx, question);
-
-                await this.insertOptionTransacting(trx, questionId[0], options).then(trx.commit);
+                questionId = await this.insertQuestionTransacting(trx, question);
+                await this.insertOptionTransacting(trx, questionId[0], options)
+                    .then(trx.commit);
             });
 
         } catch (err) {
@@ -28,7 +27,7 @@ class QuestionService {
         });
     }
 
-    async queryQuestion(questionId=null) {
+    async queryQuestion(questionId = null) {
         return await this.knex
             .select(['questions.*', 'questions.text as questionText', 'questions.expired as questionExpired', 'options.*', 'question_options.question_id', 'question_options.option_id'])
             .from('questions')
@@ -39,36 +38,7 @@ class QuestionService {
                     queryBuilder.where('questions.question_id', questionId);
                 }
             });
-    }
 
-    async insertOption(questionId, reqBody) {
-        try {
-            let options = reqBody.options;
-            await this.knex.transaction(async (trx) => {
-                await this.insertOptionTransacting(trx, questionId, options).then(trx.commit);
-            });
-        } catch (err) {
-            console.log(err);
-            throw new Error(QUESTION_STATUS.SERVER_ERROR);
-        }
-
-        return {
-            status: QUESTION_STATUS.CREATE_OPTION_SUCCESSFUL,
-        };
-    }
-
-    async insertOptionTransacting(trx, questionId, options) {
-        let chunkSize = options.length;
-        let ids = await this.knex.batchInsert('options', options, chunkSize)
-            .transacting(trx)
-            .returning('option_id')
-            .catch(() => { throw new Error(QUESTION_STATUS.SERVER_ERROR) });
-        console.log(ids);
-        let relations = ids.map(id => ({ question_id: questionId, option_id: id }));
-        console.log(relations);
-        return this.knex.batchInsert('question_options', relations, chunkSize)
-            .transacting(trx)
-            .catch(() => { throw new Error(QUESTION_STATUS.SERVER_ERROR) })
     }
 
     async getQuestion(questionId) {
@@ -82,7 +52,7 @@ class QuestionService {
 
             return {
                 status: QUESTION_STATUS.READ_QUESTION_SUCCESSFUL,
-                question: this.mapQuestion(questionWithOptions)
+                question: this.mapOption(questionWithOptions)
             };
 
         } catch (err) {
@@ -115,7 +85,7 @@ class QuestionService {
             }
 
             for (let id in sortedQuestion) {
-                questionSet.questions.push(this.mapQuestion(sortedQuestion[id]));
+                questionSet.questions.push(this.mapOption(sortedQuestion[id]));
             }
 
             return questionSet;
@@ -130,44 +100,65 @@ class QuestionService {
         }
     }
 
-    async updateQuestion(questionId, reqBody) {
-        let question = {
-            text: reqBody.text,
-            expired: reqBody.expired
-        };
-        console.log(this.tidyUp(question));
+    async insertOption(questionId, reqBody) {
         try {
-            await this.knex('questions').where('question_id', questionId).update(this.tidyUp(question));
+            let options = reqBody.options;
+            await this.knex.transaction(async (trx) => {
+                await this.insertOptionTransacting(trx, questionId, options).then(trx.commit);
+            });
         } catch (err) {
             console.log(err);
-            throw new Error(QUESTION_STATUS.QUESTION_FAIL_INPUT);
+            throw new Error(QUESTION_STATUS.SERVER_ERROR);
+        }
+
+        return {
+            status: QUESTION_STATUS.CREATE_OPTION_SUCCESSFUL,
+        };
+    }
+
+    async updateQuestion(questionId, reqBody) {
+        let question = reqBody.question;
+        let options = reqBody.options;
+        try {
+
+            await this.knex.transaction(async (trx) => {
+                await this.knex('questions').transacting(trx).where('question_id', questionId).update(question);
+                while (options.length > 0) {
+                    let option = options.pop();
+                    await this.knex('options').transacting(trx).where('option_id', option.option_id).update(option);
+                }
+            });
+        } catch (err) {
+            throw new Error(err.msg);
         }
         return { status: QUESTION_STATUS.UPDATE_QUESTION_SUCCESSFUL };
     }
 
-    insertQuestion(trx, question) {
+    insertQuestionTransacting(trx, question) {
         return this.knex('questions')
             .transacting(trx)
             .insert(question)
             .returning('question_id')
             .catch(() => {
-                throw new Error(QUESTION_STATUS.QUESTION_FAIL_INPUT);
+                throw new Error(QUESTION_STATUS.QUESTION_FAIL_INVALID_INPUT);
             });
     }
 
-    tidyUp(item) {
+    async insertOptionTransacting(trx, questionId, options) {
+        let chunkSize = options.length;
+        let ids = await this.knex.batchInsert('options', options, chunkSize)
+            .transacting(trx)
+            .returning('option_id')
+            .catch(() => { throw new Error(QUESTION_STATUS.SERVER_ERROR) });
 
-        let cleanObject = {};
-        for (let prop in item) {
-            if (item[prop] !== '' && typeof item[prop] !== 'undefined') {
-                cleanObject[prop] = item[prop];
-            }
-        };
-        return cleanObject;
+        let relations = ids.map(id => ({ question_id: questionId, option_id: id }));
+
+        return this.knex.batchInsert('question_options', relations, chunkSize)
+            .transacting(trx)
+            .catch(() => { throw new Error(QUESTION_STATUS.SERVER_ERROR) })
     }
 
-
-    mapQuestion(rawQuestion) {
+    mapOption(rawQuestion) {
         let question = {
             id: rawQuestion[0].question_id,
             text: rawQuestion[0].questionText,
