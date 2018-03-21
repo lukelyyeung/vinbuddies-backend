@@ -37,17 +37,18 @@ class UserService {
         const userInfo = await this.tidyUpUserProfile(reqBody);
         try {
 
-            let userId = await this.knex('users').insert(userInfo).returning('id')
-            return {
-                userId: userId[0],
-                status: USER_STATUS.CREATE_SUCCESSFUL
-            };
+            let user = await this.knex('users').first('id').where(userInfo);
+            if (typeof user === 'undefined') {
+                let userId = await this.knex('users').insert(userInfo).returning('id');
+                return {
+                    status: USER_STATUS.CREATE_SUCCESSFUL,
+                    userId: userId[0]
+                };
+            }
+            //* thorw error if the insertion violate the unique composite key *
+            throw new Error(USER_STATUS.USER_EXIST);
 
         } catch (err) {
-            //* thorw error if the insertion violate the unique composite key *
-            if (err.code === '23505') {
-                throw new Error(USER_STATUS.USER_EXIST);
-            }
             console.log(err);
             throw new Error(USER_STATUS.SERVER_ERROR);
         }
@@ -57,25 +58,20 @@ class UserService {
         try {
 
             const userInfo = await this.tidyUpUserProfile(reqBody);
-            await this.knex('users').first({ id: userId }).update(userInfo)
-            return { status: USER_STATUS.UPDATE_SUCCESSFUL };
+            let result = await this.knex('users').first('*').where({ id: userId }).update(userInfo);
+            return (result <= 0) ? { status: USER_STATUS.UPDATE_NO_ENTITY } : 
+                { status: USER_STATUS.UPDATE_SUCCESSFUL };
 
         } catch (err) {
             console.log(err);
-            throw new Error(USER_STATUS.SERVER_ERROR);
+            throw new Error(USER_STATUS.INFO_USED);
         }
     }
 
     async deleteUser(userId) {
-        try {
-
-            await this.knex('users').where({ id: userId }).del();
-            return { status: USER_STATUS.DELETE_SUCCESSFUL };
-
-        } catch (err) {
-            console.log(err);
-            throw new Error(USER_STATUS.SERVER_ERROR);
-        }
+        let result = await this.knex('users').where({ id: userId }).del();
+        return (result <= 0) ? { status: USER_STATUS.DELETE_NO_ENTITY } : 
+            { status: USER_STATUS.DELETE_SUCCESSFUL };
     }
 
     async tidyUpUserProfile(reqBody) {

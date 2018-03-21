@@ -1,11 +1,11 @@
 const express = require('express');
-const { SIGNUP_STATUS, LOGIN_STATUS } = require('../constant/authConstant');
+const AUTH_STATUS = require('../constant/authConstant');
 
 class LoginRouter {
     constructor(loginService) {
         this.loginService = loginService;
     }
-    
+
     router() {
         let router = express.Router();
         router.post('/login', this.localLogin.bind(this));
@@ -16,37 +16,40 @@ class LoginRouter {
 
     localLogin(req, res) {
         return this.loginService.localLogin(req.body)
-            .then(jwt => res.json(jwt))
-            .catch(err => res.json(this.errorHandler(err)));
+            .then(jwt => res.status(200).json(jwt))
+            .catch(err => res.json(this.errorHandler(res, err)));
     }
 
     localSignup(req, res) {
         return this.loginService.localSignup(req.body)
-            .then(status => res.json(status))
-            .catch(err => res.json(this.errorHandler(err)));
+            .then(status => res.status(201).json(status))
+            .catch(err => res.json(this.errorHandler(res, err)));
     }
 
     facebooklogin(req, res) {
         return this.loginService.facebookLogin(req.body)
-            .then(jwt => res.json(jwt))
-            .catch(err => res.json(this.errorHandler(err)));
+            .then(jwt => res.status(200).json(jwt))
+            .catch(err => res.json(this.errorHandler(res, err)));
     }
 
-    errorHandler(err) {
-        console.log(err);
+    errorHandler(res, err) {
         switch (err.message) {
-            case SIGNUP_STATUS.USER_EXIST:
-            case SIGNUP_STATUS.SERVER_ERROR:
-            case LOGIN_STATUS.NO_ACCESSTOKEN:
-            case LOGIN_STATUS.INVALID:
-            case LOGIN_STATUS.NO_USER:
-            case LOGIN_STATUS.SERVER_ERROR: {
-                return { error: err.message };
+            case AUTH_STATUS.SIGNUP_USER_EXIST:
+                res.status(412).json({ error: err.message });
+                break;
+            case AUTH_STATUS.LOGIN_INVALID:
+            case AUTH_STATUS.LOGIN_NO_USER:
+            case AUTH_STATUS.LOGIN_NO_ACCESSTOKEN: {
+                res.status(401).json({ error: err.message });
+                break;
+            }
+            case AUTH_STATUS.SERVER_ERROR: {
+                res.status(500).json({ error: err.message });
                 break;
             }
             default: {
                 console.log(err);
-                return { error: 'UNKNOWN_AUTH_ERROR' }
+                res.status(520).json({ error: AUTH_STATUS.UNKNOWN_ERROR });
             }
         }
     }

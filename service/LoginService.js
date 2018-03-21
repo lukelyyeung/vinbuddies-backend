@@ -2,7 +2,7 @@ const axios = require('axios');
 const jwt = require('jwt-simple');
 const config = require('../utils/config');
 const bcrypt = require('../utils/bcrypt');
-const { SIGNUP_STATUS, LOGIN_STATUS } = require('../constant/authConstant');
+const AUTH_STATUS = require('../constant/authConstant');
 
 class LoginService {
     constructor(knex) {
@@ -17,9 +17,9 @@ class LoginService {
         });
 
         if (user.id > 0) {
-            throw new Error(SIGNUP_STATUS.USER_EXIST);
+            throw new Error(AUTH_STATUS.SIGNUP_USER_EXIST);
         } else if (user.id < 0) {
-            throw new Error(SIGNUP_STATUS.SERVER_ERROR);
+            throw new Error(AUTH_STATUS.SERVER_ERROR);
         }
 
         let password = await bcrypt.hashPassword(reqBody.password);
@@ -31,10 +31,10 @@ class LoginService {
         });
 
         if (status < 0) {
-            throw new Error(SIGNUP_STATUS.SERVER_ERROR);
+            throw new Error(AUTH_STATUS.SERVER_ERROR);
         }
 
-        return SIGNUP_STATUS.SUCCESSFUL;
+        return AUTH_STATUS.SIGNUP_SUCCESSFUL;
     }
 
     async localLogin(reqBody) {
@@ -44,32 +44,30 @@ class LoginService {
             provider: 'local'
         });
         if (user.id === 0) {
-            throw new Error(LOGIN_STATUS.NO_USER);
+            throw new Error(AUTH_STATUS.LOGIN_NO_USER);
         } else if (user.id < 0) {
-            throw new Error(LOGIN_STATUS.SERVER_ERROR);
+            throw new Error(AUTH_STATUS.SERVER_ERROR);
         }
 
         let Validity = await bcrypt.checkPassword(reqBody.password, user.password);
         if (!Validity) {
-            throw new Error(LOGIN_STATUS.INVALID);
+            throw new Error(AUTH_STATUS.LOGIN_INVALID);
         }
 
-        let payload = {
-            id: user.id,
-        };
+        let payload = { id: user.id };
 
         return this.jwtEncode(payload);
     }
 
     async facebookLogin(reqBody) {
         if (!reqBody.access_token) {
-            throw new Error(LOGIN_STATUS.NO_ACCESSTOKEN);
+            throw new Error(AUTH_STATUS.LOGIN_NO_ACCESSTOKEN);
         };
 
         let accessToken = reqBody.access_token;
         let data = await axios(`https://graph.facebook.com/me?access_token=${accessToken}`)
             .catch((err) => {
-                throw new Error(LOGIN_STATUS.NO_ACCESSTOKEN);
+                throw new Error(AUTH_STATUS.LOGIN_NO_ACCESSTOKEN);
             });
 
         let user = await this.findUser({
@@ -88,7 +86,7 @@ class LoginService {
         });
 
         if (status < 0) {
-            throw new Error(LOGIN_STATUS.SERVER_ERROR);
+            throw new Error(AUTH_STATUS.SERVER_ERROR);
         }
 
         return this.jwtEncode({ id: status.id });
@@ -114,7 +112,10 @@ class LoginService {
 
     jwtEncode(payload) {
         let token = jwt.encode(payload, config.jwtSecret);
-        return { token: token };
+        return {
+            status: AUTH_STATUS.LOGIN_SUCCESSFUL, 
+            token: token 
+        };
     }
 }
 

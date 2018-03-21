@@ -4,8 +4,8 @@ class QuestionHistoryService {
     constructor(knex) {
         this.knex = knex;
     }
-
-    getHistory(userId) {
+    //* By default, the getHistory only return the all question history, by pass true as 2nd parameter, expired question and option will be screened. 
+    getHistory(userId, active=false) {
         return this.knex
             .select([
                 'questions.question_id',
@@ -17,8 +17,15 @@ class QuestionHistoryService {
             .from('user_question_history')
             .join('questions', 'user_question_history.question_id', 'questions.question_id')
             .join('options', 'user_question_history.option_id', 'options.option_id')
-            .where('questions.expired', false)
-            .andWhere('options.expired', false)
+            .where('user_question_history.user_id', userId)
+            .modify(function (queryBuilder) {
+                if (active) {
+                    queryBuilder.andWhere({ 
+                        'questions.expired': false,
+                        'options.expired': false,
+                    });
+                };
+            })
             .then((history) => {
                 if (typeof history === 'undefined' || history.length <= 0) {
                     throw new Error(QUESTION_HISTORY_STATUS.GET_HISTORY_FAIL);
@@ -30,7 +37,10 @@ class QuestionHistoryService {
                 };
             })
             .catch((err) => {
-                console.log(err);
+                if (err.message === QUESTION_HISTORY_STATUS.GET_HISTORY_FAIL) {
+                    throw new Error(err.message);
+                }
+                console.log(err.message);
                 throw new Error(QUESTION_HISTORY_STATUS.SERVER_ERROR)
             });
     }
