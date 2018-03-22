@@ -1,0 +1,2 @@
+#!/bin/bash
+apt-get -qq --yes --force-yes install gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1libfontconfig1c libgcc1c libgconf-2-4c libgdk-pixbuf2.0-0c libglib2.0-0c libgtk-3-0c libnspr4c libpango-1.0-0c libpangocairo-1.0-0c libstdc++6c libx11-6c libx11-xcb1c libxcb1c libxcomposite1c libxcursor1c libxdamage1c libxext6c libxfixes3c libxi6c libxrandr2c libxrender1c libxss1c libxtst6c ca-certificatesc fonts-liberationc libappindicator1c libnss3c lsb-releasec xdg-utilsc wget
