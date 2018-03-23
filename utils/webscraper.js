@@ -1,79 +1,116 @@
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
-let topCountry = {};
+const delay = require('./timeoutRandomizer');
 
-// (async () => {
-//     const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
-//     const page = await browser.newPage();
-//     await page.goto('https://www.wine-searcher.com/regions.lml');
-//     const content = await page.content();
-//     const $ = cheerio.load(content);
-//     $('div#navigation ul.top-level li a').each(function (idx, el) {
-//         var $el = $(el);
-//         topCountry[$el.text()] = $el.attr('href');
-//     });
-//     write(topCountry);
-//     await browser.close();
-// })();
-
-
-// (async () => {
-//     try {
-//         const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
-//         const page = await browser.newPage();
-//         console.log('direct to the page...');
-//         await page.goto('https://www.wine-searcher.com/find/vina+cobos+marchiori+malbec+perdriel+mendoza+argentina/1/hong+kong',{ waitUntil: 'load' });
-//         const content = await page.content();
-//         console.log('loaded...');
-//         const $ = cheerio.load(content);
-//         getWine($);
-//         await browser.close();
-//     } catch (err) {
-//         console.log(err);
-//     }
-// })();
 (async () => {
     try {
         const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
         let page = await browser.newPage();
         let list = await read('/topCountry.json');
-        console.log(list);
-        await runThroughList(page, list);
+        console.log('finished file reading...');
+        await getAllTopWine(page, list);
         await browser.close();
     } catch (err) {
         console.log(err);
     }
 })();
 
-async function runThroughList(page, list) {
-    for (let country in list) {
-        await page.goto(list[country]);
-        let links = await page.evaluate(() => {
-            let links = document.querySelectorAll('.wine-suggest-link');
-            return [].map.call(links, link => link.getAttribute("href"));
-        });
-        let nextPage = await page.evaluate(() => {
-            let  = document.querySelector('a[title="Next page"]');
-        });
+async function getCountryList() {
+    let topCountry = {};
+    const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+    const page = await browser.newPage();
+    await page.goto('https://www.wine-searcher.com/regions.lml');
+    const content = await page.content();
+    const $ = cheerio.load(content);
+    $('div#navigation ul.top-level li a').each(function (idx, el) {
+        var $el = $(el);
+        topCountry[$el.text()] = $el.attr('href');
+    });
+    write(topCountry, "/topCountry.json");
+    await browser.close();
+}
 
-        if (typeof nextPage !== 'undefined') {
-            await page.goto(nextPage.getAttribute("href"));
-        };
-        console.log(links);
+async function startScrapy(page, wineCollection) {
+    let collection = [];
+    for (let country in wineCollection) {
+        for (link of wineCollection[country]) {
+            await page.goto(link);
+            let content = await page.content();
+            const $ = cheerio.load(content);
+            collection.push(getWine($));
+        }
     }
 }
 
-function write(content) {
+async function getAllTopWine(page, list) {
+    let topWines = await read('/allWine.json');
+    for (let country in list) {
+
+        if (!topWines[country]) {
+
+            let collectionLocal = [];
+            let nextPage = true;
+            console.log('directing to ' + country + '...');
+            await delay([40000, 120000]);
+            await page.goto(list[country]);
+            console.log('directed to ' + country + '...');
+            await page.screenshot({
+                path: 'screenshot.jpg'
+            });
+
+            do {
+                let links = await GetWineLinks(page);
+                console.log('The first link is ', links);
+                collectionLocal = collectionLocal.concat(links);
+                if (await GetNextPage(page)) {
+                    console.log('detected next page');
+                    await delay([40000, 120000]);
+                    await page.goto(await GetNextPage(page));
+                    console.log('direct to next page');
+                } else {
+                    nextPage = false;
+                }
+            } while (nextPage);
+
+            topWines[country] = collectionLocal;
+            console.log('writing file...');
+            await write(topWines, `/allWine.json`);
+        }
+    }
+    return console.log('all done!');
+}
+
+async function GetWineLinks(page) {
+    let links = await page.evaluate(() => {
+        let links = document.querySelectorAll('.wine-suggest-link');
+        return [].map.call(links, link => link.getAttribute("href"));
+    });
+
+    return links;
+}
+
+async function GetNextPage(page) {
+    return await page.evaluate(() => {
+        let link = document.querySelector('a[title="Next page"]');
+        if (!link) {
+            return link;
+        }
+        return link.getAttribute('href');
+    });
+}
+
+function write(content, fileName) {
     return new Promise((resolve, reject) => {
-        fs.writeFile(__dirname + "/topCountry.json", JSON.stringify(content), 'utf8', function (err) {
+        fs.writeFile(__dirname + fileName, JSON.stringify(content), { encoding: 'utf8', flag: 'w' }, function (err) {
             if (err) { reject(err); };
-            console.log("The file was saved!");
+            resolve(console.log("The file was saved!"));
         });
     });
 }
 
 function read(path) {
+    console.log('reading ' + path + '...');
     return new Promise((resolve, reject) => {
         fs.readFile(__dirname + path, function read(err, data) {
             if (err) { reject(err); };
@@ -85,7 +122,6 @@ function read(path) {
 function tidyUpValue(value) {
     return value
         .replace(/[\n]+/g, "")
-        //.replace(/[\s]+/g, "")
         .replace(/^[\s]+/, "");
 }
 
@@ -127,4 +163,5 @@ function getWine($) {
         }
     });
     console.log(wine);
+    return wine;
 }
