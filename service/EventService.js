@@ -1,5 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 const { promisify } = require('util');
 const readFileAsync = promisify(fs.readFile);
 const writeFileAsync = promisify(fs.writeFile);
@@ -11,23 +12,33 @@ class EventSerive {
 
     async postEvent(req) {
         try {
-            let [id, galleries, winePhotos] = await Promise.all([
-                this.insertEvent(req.body),
-                this.uploadPhotos(req.files.photos, '/photos'),
-                this.uploadPhotos(req.files.winePhotos, '/winePhotos'),
-            ]);
+            await this.knex.transaction(async(trx) => {
+                let [id, galleries, winePhotos] = await Promise.all([
+                    this.insertEvent(trx, req.body),
+                    this.uploadPhotos(req.files.photos, path.join(__dirname, '../', 'store/photos')),
+                    this.uploadPhotos(req.files.winePhotos, path.join(__dirname, '../', 'store/winePhotos')),
+                ]);
 
-            let wineIds = JSON.parse(req.body.wineIds);
-            let wineNames = JSON.parse(req.body.wineNames);
-            let wineKey = { wine_id: wineIds };
-            let wineNameKey = { wine_name: wineNames };
-            let winePhotoKey = { wine_photo: winePhotos };
-            
-            // let event_photo = this.mapToEvent(id, )
-            let eventWinePhotoRelation = this.mapToEvent(id, wineKey, wineNameKey, winePhotoKey);
-            return eventWinePhotoRelation;
-            // await this.batchInsertRelation('event_photo', eventWinePhotoRelation);
-            // await this.batchInsertRelation('event_wine_photo', eventWinePhotoRelation);
+                let wineNames = JSON.parse(req.body.wineNames);
+                let participantIds = req.body.participants;
+                let participantSet = { participant: participantIds };
+                let wineNameSet = { wine_name: wineNames };
+                let galleriesSet = { event_photo: galleries };
+                let winePhotoSet = { wine_photo: winePhotos };
+
+                let eventParticipantRlation = this.mapToEvent(id, participantSet);
+                let eventPhotoRelation = this.mapToEvent(id, galleriesSet);
+                let eventWinePhotoRelation = this.mapToEvent(id, wineNameSet, winePhotoSet);
+                return {
+                    wine: eventWinePhotoRelation,
+                    photos: eventPhotoRelation
+                }
+                await this.batchInsertRelation(trx, 'event_photo', eventWinePhotoRelation);
+                return await this.batchInsertRelation(trx, 'event_wine_photo', eventWinePhotoRelation)
+                    .then(trx.commit)
+                    .then(() => { status: 'Posted event successfully.' });
+
+            })
         } catch (err) {
             console.log(err);
             return { err: 'fucked' };
@@ -37,27 +48,25 @@ class EventSerive {
     async uploadPhotos(files, folder) {
         let photoPaths = [];
         for (const photo of files) {
-            let fileName = __dirname + `${folder}/${new Date().getTime()}.jpg`;
+            let fileName = `${folder}/${new Date().getTime()}.jpg`;
             await writeFileAsync(fileName, photo.buffer, 'binary');
             photoPaths.push(fileName);
-            console.log('saved ', fileName);
         }
         return photoPaths;
     }
 
-    insertEvent(req) {
+    insertEvent(trx, req) {
         let event = {
             event_title: req.title,
-            event_date: req.date,
+            date: req.date,
             description: req.description,
             participant: req.participant,
         }
-        return 1;
-        // return this.knex('event').insert(event).returning('event_id');
+        return this.knex('events').transacting(trx).insert(event).returning('event_id');
     }
 
-    batchInsertRelation(table, relation) {
-        return knex(table).batchInsert(relation)
+    batchInsertRelation(trx, table, relation) {
+        return knex(table).transacting(trx).batchInsert(relation)
             .catch((err) => { throw new Error() });
     }
 
