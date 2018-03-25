@@ -1,12 +1,11 @@
 const axios = require('axios');
-const fs = require('fs');
-const fsExtra = require('fs-extra');
+const fs = require('fs-extra');
 const path = require('path');
 const { promisify } = require('util');
 const EVENT_STATUD = require('../constant/eventConstant');
-const readFileAsync = promisify(fsExtra.outputFile);
-const deleteFolderAsync = promisify(fsExtra.remove);
-const writeFileAsync = promisify(fs.writeFile);
+const readFileAsync = promisify(fs.readFile);
+const deleteFolderAsync = fs.remove;
+const writeFileAsync = promisify(fs.outputFile);
 
 class EventSerive {
     constructor(knex) {
@@ -19,7 +18,8 @@ class EventSerive {
         let id = 0
         try {
             await this.knex.transaction(async (trx) => {
-                let id = (await this.insertEvent(trx, req.body))[0];
+                id = (await this.insertEvent(trx, req.body))[0];
+                console.log(id);
 
                 [galleries, winePhotos] = await Promise.all([
                     this.uploadPhotos(req.files.photos, path.join(__dirname, '../', `store/photos/${id}`)),
@@ -48,6 +48,8 @@ class EventSerive {
 
             })
         } catch (err) {
+                await deleteFolderAsync(path.join(__dirname, '../', `store/winePhotos/${id}`));
+                await deleteFolderAsync(path.join(__dirname, '../', `store/photos/${id}`));
             console.log(err);
             return { err: 'fucked' };
         }
@@ -55,6 +57,7 @@ class EventSerive {
 
     async uploadPhotos(files, folder) {
         let photoPaths = [];
+        if (typeof files !== 'undefined')
         for (const photo of files) {
             let fileName = `${folder}/${new Date().getTime()}.jpg`;
             await writeFileAsync(fileName, photo.buffer, 'binary');
@@ -65,10 +68,10 @@ class EventSerive {
 
     insertEvent(trx, req) {
         let event = {
+            creator_id: req.id,
             event_title: req.title,
             date: req.date,
             description: req.description,
-            participant: req.participant,
         }
         return this.knex('events').transacting(trx).insert(event).returning('event_id');
     }
@@ -82,6 +85,7 @@ class EventSerive {
         otherSet.forEach((set, index) => {
             let key = Object.keys(set)[0];
             let valueArray = set[key];
+            console.log(valueArray);
             valueArray.forEach((value, index) => {
                 endArray[index] = endArray[index] || {};
                 endArray[index][key] = value;
