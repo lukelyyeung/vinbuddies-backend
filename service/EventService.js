@@ -1,8 +1,11 @@
 const axios = require('axios');
 const fs = require('fs');
+const fsExtra = require('fs-extra');
 const path = require('path');
 const { promisify } = require('util');
-const readFileAsync = promisify(fs.readFile);
+const EVENT_STATUD = require('../constant/eventConstant');
+const readFileAsync = promisify(fsExtra.outputFile);
+const deleteFolderAsync = promisify(fsExtra.remove);
 const writeFileAsync = promisify(fs.writeFile);
 
 class EventSerive {
@@ -11,12 +14,16 @@ class EventSerive {
     }
 
     async postEvent(req) {
+        let galleries = [];
+        let winePhotos = [];
+        let id = 0
         try {
-            await this.knex.transaction(async(trx) => {
-                let [id, galleries, winePhotos] = await Promise.all([
-                    this.insertEvent(trx, req.body),
-                    this.uploadPhotos(req.files.photos, path.join(__dirname, '../', 'store/photos')),
-                    this.uploadPhotos(req.files.winePhotos, path.join(__dirname, '../', 'store/winePhotos')),
+            await this.knex.transaction(async (trx) => {
+                let id = (await this.insertEvent(trx, req.body))[0];
+
+                [galleries, winePhotos] = await Promise.all([
+                    this.uploadPhotos(req.files.photos, path.join(__dirname, '../', `store/photos/${id}`)),
+                    this.uploadPhotos(req.files.winePhotos, path.join(__dirname, '../', `store/winePhotos/${id}`)),
                 ]);
 
                 let wineNames = JSON.parse(req.body.wineNames);
@@ -26,17 +33,18 @@ class EventSerive {
                 let galleriesSet = { event_photo: galleries };
                 let winePhotoSet = { wine_photo: winePhotos };
 
-                let eventParticipantRlation = this.mapToEvent(id, participantSet);
+                let eventParticipantRelation = this.mapToEvent(id, participantSet);
                 let eventPhotoRelation = this.mapToEvent(id, galleriesSet);
                 let eventWinePhotoRelation = this.mapToEvent(id, wineNameSet, winePhotoSet);
+
+                await this.batchInsertRelation(trx, 'event_participant', eventParticipantRelation);
+                await this.batchInsertRelation(trx, 'event_photo', eventWinePhotoSet);
+                await this.batchInsertRelation(trx, 'event_wine_photo', winePhotoSet).then(trx.commit);
+                
                 return {
-                    wine: eventWinePhotoRelation,
-                    photos: eventPhotoRelation
-                }
-                await this.batchInsertRelation(trx, 'event_photo', eventWinePhotoRelation);
-                return await this.batchInsertRelation(trx, 'event_wine_photo', eventWinePhotoRelation)
-                    .then(trx.commit)
-                    .then(() => { status: 'Posted event successfully.' });
+                    status: 'Posted event successfully.',
+                    event_id: id
+                };
 
             })
         } catch (err) {
@@ -67,7 +75,6 @@ class EventSerive {
 
     batchInsertRelation(trx, table, relation) {
         return knex(table).transacting(trx).batchInsert(relation)
-            .catch((err) => { throw new Error() });
     }
 
     mapToEvent(eventId, ...otherSet) {

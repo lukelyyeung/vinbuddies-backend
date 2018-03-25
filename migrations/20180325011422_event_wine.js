@@ -5,6 +5,7 @@ exports.up = function(knex, Promise) {
         table.integer('event_id');
         table.foreign('event_id').references('events.event_id');
         table.string('wine_photo_path');
+        table.string('wine_name');
     });
 };
 

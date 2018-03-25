@@ -63,12 +63,12 @@ class QuestionRouter {
                     break;
                 }
             case QUESTION_STATUS.SERVER_ERROR: {
-                res.status(520).json({ error: err.message });
+                res.status(500).json({ error: err.message });
                 break;
             }
             default:
-                console.log(err);
-                return { error: 'UNKNOWN_QUESTION_ERROR' };
+            console.log(err);
+            res.status(520).json({ error: QUESTION_STATUS.UNKNOWN_ERROR });
         };
     }
 }
