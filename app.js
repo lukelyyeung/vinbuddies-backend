@@ -29,11 +29,11 @@ const userService = new UserService(knex);
 const questionService = new QuestionService(knex);
 const questionHistoryService = new QuestionHistoryService(knex);
 const eventService = new EventService(knex);
-const { app, server } = require('./utils/init-app')(express);
+const { app, server, auth } = require('./utils/init-app')(express, loginService);
 
 app.use('/api/v1/auth', new LoginRouter(loginService).router());
 app.use('/api/v1/user', new UserRouter(userService).router());
 app.use('/api/v1/questions', new QuestionRouter(questionService).router());
 app.use('/api/v1/questionhistory', new QuestionHistoryRouter(questionHistoryService).router());
-app.use('/api/v1/event', new EventRouter(eventService).router());
+app.use('/api/v1/event', auth.authenticate(), new EventRouter(eventService).router());
 server.listen(3000, () => console.log('Listen on the port 3000.'));

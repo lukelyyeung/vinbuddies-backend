@@ -93,6 +93,7 @@ class LoginService {
     }
 
     findUser(user) {
+        console.log('called');
         return this.knex('users').first('id', 'name', 'password').where(user)
             .then((userInfo) => (typeof userInfo === 'undefined') ? { id: 0 } : userInfo)
             .catch((err) => {
@@ -111,7 +112,7 @@ class LoginService {
     }
 
     jwtEncode(payload) {
-        let token = jwt.encode(payload, config.jwtSecret);
+        let token = jwt.encode(payload, config.privatekey);
         return {
             status: AUTH_STATUS.LOGIN_SUCCESSFUL, 
             token: token 

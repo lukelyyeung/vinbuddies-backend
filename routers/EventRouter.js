@@ -25,7 +25,7 @@ class EventRouter {
     }
 
     deleteEvent(req, res) {
-        return this.eventService.deleteEvent(req)
+        return this.eventService.deleteEvent(req.params.eventId, req)
             .then((status) => res.status(200).json(status))
             .catch((err) => this.errorHandle(res, err));
     }
@@ -37,7 +37,7 @@ class EventRouter {
     }
 
     getEvent(req, res) {
-        return this.eventService.getEvent(req.params.eventId)
+        return this.eventService.getEvent(req.params.eventId, req)
             .then((status) => res.status(200).json(status))
             .catch((err) => this.errorHandle(res, err));
     }
