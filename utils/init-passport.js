@@ -1,21 +1,24 @@
 const passport = require('passport');
 const passportJWT = require('passport-jwt');
 const config = require('./config');
-const AUTH_STATUS = require('../constant/authConstant');
+const GENERAL_STATUS = require('../constant/generalConstant');
 const ExtractJwt = passportJWT.ExtractJwt;
 
 module.exports = (loginService) => {
     try {
-
         const strategy = new passportJWT.Strategy({
-            secretOrKey: config.privatekey,
+            secretOrKey: config.publicKey,
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken()
         }, async (payload, done) => {
             let user = await loginService.findUser(payload);
             if (user.id > 0) {
-                return done(null, { id: user.id });
+                return done(null, {
+                    id: user.id,
+                    role: user.role,
+                    firstLogin: user.first_login
+                });
             } else {
-                return done(new Error(AUTH_STATUS.LOGIN_NO_USER), null);
+                return done(new Error(GENERAL_STATUS.NOT_AUTHORIZED), null);
             }
         });
 

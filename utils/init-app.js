@@ -7,13 +7,15 @@ const initPassport = require('./init-passport');
 // Export the function to set up the app
 module.exports = (express, loginService) => {
     const app = express();
+    app.use(cors());
     const server = http.Server(app);
     const auth = initPassport(loginService);
-    app.use(bodyParser.json());
+    app.use(bodyParser.json({limit: '30mb'}));
     app.use(session({
-        secret: 'supersecret'
+        secret: 'supersecret',
+        resave: true,
+        saveUninitialized: true
     }));
-    app.use(cors());
     app.use(auth.initialize());
 
     return {

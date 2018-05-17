@@ -1,218 +1,286 @@
-const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
+const sha1 = require('sha1');
+const mapObjectToKeys = require('../utils/mapObjectToKeys');
+const { batchInsert, batchReinsert } = require('../utils/batchInsertTransacting');
+const fileType = require('file-type');
 const { promisify } = require('util');
 const EVENT_STATUS = require('../constant/eventConstant');
+const GENERAL_STATUS = require('../constant/generalConstant');
 const readFileAsync = promisify(fs.readFile);
-const deleteFolderAsync = fs.remove;
 const writeFileAsync = promisify(fs.outputFile);
+const deleteFileAsync = fs.remove;
+const acceptedFileType = ['jpg', 'png', 'jpeg'];
 
-class EventSerive {
+class EventService {
     constructor(knex) {
         this.knex = knex;
     }
 
     async postEvent(req) {
-        let galleries = [];
-        let winePhotos = [];
-        let id = 0
+        let { user, body: { wines, tags, participants, photos, winePhotos } } = req;
+        let eventId, wineIds, tagIds, participantIds;
         try {
             await this.knex.transaction(async (trx) => {
-                id = (await this.insertEvent(trx, req))[0];
+                eventId = (await this.insertEvent(trx, req))[0];
 
-                [galleries, winePhotos] = await Promise.all([
-                    this.uploadPhotos(req.files.photos, path.join(__dirname, '../', `store/photos/${id}`)),
-                    this.uploadPhotos(req.files.winePhotos, path.join(__dirname, '../', `store/winePhotos/${id}`)),
+                [wineIds, tagIds, participantIds] = await Promise.all([
+                    this.register(trx, wines, 'wines', 'wine_name', 'wine_id'),
+                    this.register(trx, tags, 'tags', 'tag_name', 'tag_id'),
+                    this.register(trx, participants, 'users', 'username', 'id')
                 ]);
 
-                let wineNames = JSON.parse(req.body.wineNames);
-                let participantIds = JSON.parse(req.body.participants);
-                let participantSet = { participant_id: participantIds };
-                let wineNameSet = { wine_name: wineNames };
-                let galleriesSet = { gallery_path: galleries };
-                let winePhotoSet = { wine_photo_path: winePhotos };
-                
-                let eventParticipantSet = this.mapObjectToEvent(id, participantSet);
-                let eventGallerySet = this.mapObjectToEvent(id, galleriesSet);
-                let eventWinePhotoSet = this.mapObjectToEvent(id, wineNameSet, winePhotoSet);
-                
-                await this.batchInsertRelation(trx, 'event_participant', eventParticipantSet);
-                await this.batchInsertRelation(trx, 'event_gallery', eventGallerySet);
-                await this.batchInsertRelation(trx, 'event_wine', eventWinePhotoSet).then(trx.commit);
-                
+                let [eventTag, eventGallery, eventParticipant] = this.relationMapping(eventId, user.id, tagIds, wineIds, photos, winePhotos, participantIds);
+                await Promise.all([
+                    batchInsert(this.knex, trx, 'user_event', eventParticipant),
+                    batchInsert(this.knex, trx, 'event_tags', eventTag),
+                    batchInsert(this.knex, trx, 'event_gallery', eventGallery)
+                ]).then(trx.commit);
+
             });
-            
+
             return {
                 status: 'Posted event successfully.',
-                event_id: id
+                event_id: eventId
             };
-            
+
         } catch (err) {
-            await deleteFolderAsync(path.join(__dirname, '../', `store/winePhotos/${id}`));
-            await deleteFolderAsync(path.join(__dirname, '../', `store/photos/${id}`));
-            if (err.message === EVENT_STATUS.SERVER_ERROR || err.message === EVENT_STATUS.SERVER_ERROR) {
+            if (err.message === GENERAL_STATUS.DATABASE_ERROR) {
                 throw new Error(err.message);
             }
             console.log(err);
-            return { err: 'fucked' };
+            return { err: GENERAL_STATUS.UNKNOWN_ERROR };
         }
     }
-    
-    async getEvent(eventId, req) {
-        let eventInfo = await this.knex.first('*')
-            .from('events')
-            .where('events.event_id', eventId);
-            
-            let participantList = await this.knex.select([
-                'participant.id as participant_id',
-                'participant.name as participant_name',
-            ])
-            .from('events')
-            .join('event_participant', 'event_participant.event_id', 'events.event_id')
-            .join('users as participant', 'participant.id', 'event_participant.participant_id')
-            .where('events.event_id', eventId);
-            
-            if (req.user.id === eventInfo.creator_id || !(participantList.some(e => req.user.id === e.participant_id))) {
-                throw new Error(EVENT_STATUS.NOT_AUTHORIZED);
-            }
-            
-            let galleries = await this.knex.select('event_gallery.gallery_path')
-            .from('events')
-            .join('event_gallery', 'events.event_id', 'event_gallery.event_id')
-            .where('events.event_id', eventId)
-            
-            let winePhotos = await this.knex.select(['event_wine.wine_name', 'event_wine.wine_photo_path'])
-            .from('events')
-            .join('event_wine', 'events.event_id', 'event_wine.event_id')
-            .where('events.event_id', eventId)
-            
-            participantList.forEach(e => {
-                eventInfo['participant'] = eventInfo['participant'] || [];
-                eventInfo['participant'].push({ id: e.participant_id, name: e.participant_name })
-            });
 
-            winePhotos.forEach(e => {
-                eventInfo['wine'] = eventInfo['wine'] || [];
-            eventInfo['wine'].push({ name: e.wine_name, photo: e.wine_photo_path });
+    async getEvent(eventId, req) {
+
+        let eventInfo = await this.knex.raw(`
+            select row_to_json(t)
+            from (
+                select event_id, event_title, description , date, deleted,
+                (
+                    select array_to_json(array_agg(row_to_json(d)))
+                    from (
+                    select photo_path
+                    from event_gallery
+                    where event_gallery.event_id=events.event_id
+                    And event_gallery.type='gallery'
+                    ) d
+                ) as gallery,
+                (
+                    select array_to_json(array_agg(row_to_json(d)))
+                    from (
+                    select photo_path, event_gallery.wine_id, wine_name
+                    from event_gallery
+                    inner join wines on event_gallery.wine_id = wines.wine_id
+                    where event_gallery.event_id=events.event_id
+                    And event_gallery.type='wine'
+                    ) d
+                ) as wines,
+                (
+                    select array_to_json(array_agg(row_to_json(d)))
+                    from (
+                    select users.username, users.id, users.picture
+                    from users
+                    inner join user_event on user_event.user_id = users.id
+                    where user_event.event_id=events.event_id
+                    And user_event.role='participant'
+                    ) d
+                ) as participants,
+                    (
+                    select array_to_json(array_agg(row_to_json(d)))
+                    from (
+                    select users.username, users.id, users.picture
+                    from users
+                    inner join user_event on user_event.user_id = users.id
+                    where user_event.event_id=events.event_id
+                    And user_event.role='creator'
+                    ) d
+                ) as creator,
+                (
+                    select array_to_json(array_agg(row_to_json(d)))
+                    from (
+                    select tags.tag_name, tags.tag_id
+                    from tags
+                    inner join event_tags on event_tags.tag_id = tags.tag_id
+                    where event_tags.event_id=events.event_id
+                    ) d
+                ) as tags
+                from events 
+                WHERE events.event_id = ?
+                AND events.deleted = false
+            ) t`, [eventId]
+        )
+        .then(data => {
+            if (!data.rows[0]) {
+                throw new Error(EVENT_STATUS.NOT_FOUND);
+            }
+            return data.rows[0].row_to_json;
         });
-        
-        galleries.forEach(e => {
-            eventInfo['gallery'] = eventInfo['gallery'] || [];
-            eventInfo['gallery'].push(e.gallery_path);
-        });
-        
-        return eventInfo;
-        
+        if (req.user.id !== eventInfo.creator.id && !(eventInfo.participants.some(e => e.id = req.user.id))) {
+            throw new Error(EVENT_STATUS.NOT_AUTHORIZED);
+        }
+
+        return {
+            status: EVENT_STATUS.GET_SUCCESSFUL,
+            event: eventInfo
+        };
     }
-    
+
     async deleteEvent(eventId, req) {
         try {
+
+            let user = await this.isCreator(req.user.id, eventId);
             
-            await this.isCreator(req.user.id, eventId);
-            await this.knex.transaction(async (trx) => {
-                await this.knex('event_participant').transaction(trx).where('event_id', eventId).del();
-                await this.knex('event_wine').transaction(trx).where('event_id', eventId).del();
-                await this.knex('event_gallery').transaction(trx).where('event_id', eventId).del().then(trx.commit);
-            })
+            if (typeof user === 'undefined' || user.role !== 'creator') {
+                throw new Error(GENERAL_STATUS.NOT_AUTHORIZED);
+            }
+            let deleted = await this.knex('events').where('event_id', eventId).update({ deleted: true });
+            if (deleted <= 0) {
+                throw new Error(EVENT_STATUS.DELETE_FAIL);
+            }
+
         } catch (err) {
             console.log(err);
-            throw new Error(EVENT_STATUS.SERVER_ERROR);
-        }
-        try {
-            
-            await Promise.all([
-                deleteFolderAsync(path.join(__dirname, '../', `store/photos/${eventId}`)),
-                deleteFolderAsync(path.join(__dirname, '../', `store/winePhotos/${eventId}`))
-            ]);
-        } catch (err) {
-            console.log(err);
-            throw new Error(EVENT_STATUS.DELETE_FAIL);
+            throw new Error(GENERAL_STATUS.DATABASE_ERROR);
         }
         return { status: EVENT_STATUS.DELETE_SUCCESSFUL }
     }
-    
+
     async updateEvent(eventId, req) {
-        await this.isCreator(req.user.id, eventId);
+        let creator = await this.isCreator(req.user.id, eventId);
+
+        if (typeof creator === 'undefined' || creator.role !== 'creator') {
+            throw new Error(GENERAL_STATUS.NOT_AUTHORIZED);
+        }
+
         let event = {
             event_title: req.body.title,
             date: req.body.date,
             description: req.body.description,
+            deleted: req.body.deleted
         }
-        await this.knex('events').update(event).where('event_id', eventId);
-        if (req.body.participant) {
-            let participantSet = { participant_id: participantIds };
-            let eventParticipantSet = this.mapObjectToEvent(id, participantSet);
-            await this.batchInsertRelation('event_participant', )            
+
+        let { user, body: { wine, tags, participants, photos, winePhotos } } = req;
+        let wineIds, tagIds, participantIds;
+        try {
+            await this.knex.transaction(async (trx) => {
+                await this.knex('events').update(event).where('event_id', eventId);
+
+                [wineIds, tagIds, participantIds] = await Promise.all([
+                    this.register(trx, wine, 'wines', 'wine_name', 'wine_id'),
+                    this.register(trx, tags, 'tags', 'tag_name', 'tag_id'),
+                    this.register(trx, participants, 'users', 'username', 'id')
+                ]);
+
+                let [eventTag, eventGallery, eventParticipant] = this.relationMapping(eventId, req.user.id, tagIds, wineIds, photos, winePhotos, participantIds);
+
+                await Promise.all([
+                    batchReinsert(this.knex, trx, 'user_event', { event_id: eventId }, eventParticipant),
+                    batchReinsert(this.knex, trx, 'event_tags', { event_id: eventId }, eventTag),
+                    batchReinsert(this.knex, trx, 'event_gallery', { event_id: eventId }, eventGallery)
+                ]).then(trx.commit);
+
+            });
+            
+            return { status: EVENT_STATUS.UPDATE_SUCCESSFUL };
+
+        } catch (err) {
+            if (err.message === GENERAL_STATUS.DATABASE_ERROR) {
+                throw new Error(err.message);
+            }
+            console.log(err);
+            return { err: GENERAL_STATUS.UNKNOWN_ERROR };
         }
     }
-    
-    async uploadPhotos(files, folder) {
-        let photoPaths = [];
-        if (typeof files !== 'undefined') {
-            try {
-                
-                for (const photo of files) {
-                    let fileName = `${folder}/${new Date().getTime()}.jpg`;
-                    await writeFileAsync(fileName, photo.buffer, 'binary');
-                    photoPaths.push(fileName);
+
+    async register(trx, dataArray, table, column, dataReturn) {
+        let registeredArray = [];
+        for (const data of dataArray) {
+            if (typeof data !== 'string') {
+                registeredArray.push(data);
+            } else {
+
+                if (table === 'users') {
+                    await trx.raw(`
+                    WITH new_row AS (
+                        INSERT INTO ${table} (${column}, provider, role)
+                        SELECT '${data}', 'event', 'anonymous'
+                        WHERE NOT EXISTS (SELECT ${dataReturn} FROM ${table} 
+                            WHERE ${column} = '${data}'
+                            AND role = 'anonymous'
+                        )
+                        RETURNING ${dataReturn}
+                    )
+                    SELECT ${dataReturn} FROM new_row
+                    UNION
+                    SELECT ${dataReturn} FROM ${table} WHERE ${column} = '${data}';
+                    `)
+                        .then(result => registeredArray.push(result.rows[0][dataReturn]));
+
+                } else {
+
+                    await trx.raw(`
+                    WITH new_row AS (
+                        INSERT INTO ${table} (${column})
+                        SELECT '${data}'
+                        WHERE NOT EXISTS (SELECT ${dataReturn} FROM ${table} WHERE ${column} = '${data}')
+                        RETURNING ${dataReturn}
+                    )
+                    SELECT ${dataReturn} FROM new_row
+                    UNION
+                    SELECT ${dataReturn} FROM ${table} WHERE ${column} = '${data}';
+                    `)
+                        .then(result => registeredArray.push(result.rows[0][dataReturn]));
                 }
-            } catch (err) {
-                console.log(err);
-                throw new Error(EVENT_STATUS.UPLOAD_FAIL);
             }
         }
-        return photoPaths;
+        return registeredArray;
     }
-    
+
     insertEvent(trx, req) {
         let event = {
-            creator_id: req.user.id,
             event_title: req.body.title,
             date: req.body.date,
-            description: req.body.description,
+            description: req.body.description
         }
+
         return this.knex('events')
-        .transacting(trx)
-        .insert(event)
-        .returning('event_id')
-        .catch(err => {
-            console.log(err);
-            throw new Error(EVENT_STATUS.SERVER_ERROR);
-        })
+            .transacting(trx)
+            .insert(event)
+            .returning('event_id')
+            .catch(err => {
+                console.log(err);
+                throw new Error(GENERAL_STATUS.NOT_AUTHORIZED);
+            })
     }
-    
-    batchInsertRelation(trx, table, relation, chunk = 10) {
-        return this.knex
-        .batchInsert(table, relation, chunk)
-        .transacting(trx)
-        .catch(err => {
-            console.log(err);
-            throw new Error(EVENT_STATUS.SERVER_ERROR);
-        })
+
+    relationMapping(eventId, creatorId, tagIds, wineIds, photos, winePhotos, participantIds) {
+        let tagIdSet = { tag_id: tagIds };
+        let wineIdSet = { wine_id: wineIds };
+        let photoSet = { photo_path: photos };
+        let winePhotoSet = { photo_path: winePhotos };
+        let participantSet = { user_id: participantIds };
+
+        let eventParticipant = mapObjectToKeys({ event_id: eventId, role: 'participant' }, participantSet)
+            .concat({ event_id: eventId, user_id: creatorId, role: 'creator' });
+        let eventTag = mapObjectToKeys({ event_id: eventId }, tagIdSet);
+        let eventPhoto = mapObjectToKeys({ event_id: eventId, type: 'gallery' }, photoSet);
+        let eventWinePhoto = mapObjectToKeys({ event_id: eventId, type: 'wine' }, winePhotoSet, wineIdSet);
+
+        let eventGallery = eventPhoto.concat(eventWinePhoto);
+        return [eventTag, eventGallery, eventParticipant];
     }
-    
-    mapObjectToEvent(eventId, ...otherSet) {
-        let endArray = [];
-        otherSet.forEach((set, index) => {
-            let key = Object.keys(set)[0];
-            let valueArray = set[key];
-            console.log(key);
-            console.log(typeof valueArray);
-            valueArray.forEach((value, index) => {
-                endArray[index] = endArray[index] || {};
-                endArray[index][key] = value;
+
+    async isCreator(userId, eventId) {
+        let user = await this.knex('user_event').first('role')
+            .where({
+                event_id: eventId,
+                user_id: userId
             });
-            endArray.map(e => e['event_id'] = eventId);
-        });
-        return endArray;
-    }
-    
-    isCreator(userId, eventId) {
-        let creator_id = await this.knex('events').transaction(trx).first('creator_id').where('event_id', eventId);
-        if (creator_id !== userId) {
-            throw new Error(EVENT_STATUS.NOT_AUTHORIZED);
-        }
+        return user;
     }
 }
 
-module.exports = EventSerive;
+module.exports = EventService;
