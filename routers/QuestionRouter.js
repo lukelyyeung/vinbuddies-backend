@@ -1,5 +1,6 @@
 const express = require('express');
-const QUESTION_STATUS = require('../constant/questionConstant');
+const errorHandler = require('../utils/errorHandler');
+const queryStringValidator = require('../utils/queryValidation');
 
 class QuestionRouter {
     constructor(questionService) {
@@ -8,69 +9,52 @@ class QuestionRouter {
 
     router() {
         let router = express.Router();
-        router.post('/', this.createQuestion.bind(this));
-        router.post('/:questionId/option', this.insertOption.bind(this));
+        router.post('/', this.postQuestion.bind(this));
+        router.post('/:questionId/option', this.createNewOption.bind(this));
         router.get('/allquestion', this.getAllQuestion.bind(this));
         router.get('/:questionId', this.getQuestion.bind(this));
         router.patch('/:questionId', this.updateQuestion.bind(this));
         return router;
     }
 
-    createQuestion(req, res) {
-        return this.questionService.createQuestion(req.body)
+    postQuestion(req, res) {
+        return this.questionService.postQuestion(req)
             .then((status) => res.status(201).json(status))
-            .catch((err) => res.json(this.errorHandle(res, err)));
+            .catch((err) => errorHandler(res, err));
     }
 
-    insertOption(req, res) {
-        return this.questionService.insertOption(req.params.questionId, req.body)
+    createNewOption(req, res) {
+        return this.questionService.createNewOption(req)
             .then((status) => res.status(201).json(status))
-            .catch((err) => res.json(this.errorHandle(res, err)));
+            .catch((err) => errorHandler(res, err));
     }
 
     updateOption(req, res) {
-        return this.questionService.updateOption(req.body)
+        return this.questionService.updateOption(req)
             .then((status) => res.status(200).json(status))
-            .catch((err) => res.json(this.errorHandle(res, err)));
+            .catch((err) => errorHandler(res, err));
     }
 
     getQuestion(req, res) {
-        return this.questionService.getQuestion(req.params.questionId)
+        let queryArray = queryStringValidator(req.query, ['includeExpired']);
+        return this.questionService.getQuestion(req, queryArray)
             .then((question) => res.status(200).json(question))
-            .catch((err) => res.json(this.errorHandle(res, err)));
+            .catch((err) => errorHandler(res, err));
     }
 
     getAllQuestion(req, res) {
-        return this.questionService.getAllQuestions()
+        let queryArray = queryStringValidator(req.query, ['includeExpired', 'limit', 'offset']);
+        return this.questionService.getAllQuestions(req, queryArray)
             .then((questions) => res.status(200).json(questions))
-            .catch((err) => res.json(this.errorHandle(res, err)));
+            .catch((err) => errorHandler(res, err));
     }
 
     updateQuestion(req, res) {
-        return this.questionService.updateQuestion(req.params.questionId, req.body)
+        return this.questionService.updateQuestion(req)
             .then((status) => res.status(200).json(status))
-            .catch((err) => res.json(this.errorHandle(res, err)));
+            .catch((err) => errorHandler(res, err));
     }
 
-    errorHandle(res, err) {
-        switch (err.message) {
-            case QUESTION_STATUS.READ_FAIL_NO_QUESTION: {
-                res.status(404).json({ error: err.message });
-                break;
-            }
-            case QUESTION_STATUS.POST_FAIL_INVALID_INPUT: {
-                    res.status(412).json({ error: err.message });
-                    break;
-                }
-            case QUESTION_STATUS.SERVER_ERROR: {
-                res.status(520).json({ error: err.message });
-                break;
-            }
-            default:
-                console.log(err);
-                return { error: 'UNKNOWN_QUESTION_ERROR' };
-        };
-    }
 }
 
 module.exports = QuestionRouter;

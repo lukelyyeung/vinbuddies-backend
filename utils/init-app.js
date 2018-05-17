@@ -5,18 +5,22 @@ const cors = require('cors');
 const initPassport = require('./init-passport');
 
 // Export the function to set up the app
-module.exports = (express) => {
+module.exports = (express, loginService) => {
     const app = express();
-    const server = http.Server(app);
-    app.use(bodyParser.json());
-    app.use(session({
-        secret: 'supersecret'
-    }));
     app.use(cors());
-    app.use(initPassport().initialize());
+    const server = http.Server(app);
+    const auth = initPassport(loginService);
+    app.use(bodyParser.json({limit: '30mb'}));
+    app.use(session({
+        secret: 'supersecret',
+        resave: true,
+        saveUninitialized: true
+    }));
+    app.use(auth.initialize());
 
     return {
         app: app,
-        server: server
+        server: server,
+        auth: auth
     }
 }   

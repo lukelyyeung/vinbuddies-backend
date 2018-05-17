@@ -1,0 +1,3004 @@
+{
+  "openapi": "3.0.0",
+  "servers": [
+    {
+      "url": "http://localhost:3030/api/v1"
+    },
+    {
+      "url": "http://www.vinbuddies.com"
+    }
+  ],
+  "info": {
+    "description": "This is the v1 api guide of Vinbuddies \n",
+    "version": "1.0.0-oas3",
+    "title": "Vinbuddies API",
+    "contact": {
+      "email": "lukelyyeung@gmail.com"
+    }
+  },
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Auth api"
+    },
+    {
+      "name": "user",
+      "description": "Operations about user"
+    },
+    {
+      "name": "questions",
+      "description": "Operations about question"
+    },
+    {
+      "name": "questionhistory",
+      "description": "Operations about questionhistory"
+    },
+    {
+      "name": "upload",
+      "description": "Operations about upload"
+    },
+    {
+      "name": "event",
+      "description": "Operations about event"
+    },
+    {
+      "name": "eventjournal",
+      "description": "Operations about eventjournal"
+    }
+  ],
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "summary": "Sign up a new local user",
+        "operationId": "localSignUp",
+        "responses": {
+          "201": {
+            "description": "Sign up successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/signUpSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/invalidInput"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "User exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/signupUserExist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/signUp"
+              }
+            }
+          },
+          "description": "Credential object to sign up user",
+          "required": true
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "summary": "Login as local user",
+        "operationId": "localLoginIn",
+        "responses": {
+          "200": {
+            "description": "login in successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/loginSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Incorret password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/loginInvalidPWD"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/loginNoUser"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/login"
+              }
+            }
+          },
+          "description": "Credential object to login",
+          "required": true
+        }
+      }
+    },
+    "/auth/facebook": {
+      "post": {
+        "security": [],
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login via facebook",
+        "operationId": "fbLoginIn",
+        "responses": {
+          "200": {
+            "description": "Log in successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/loginSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/loginNoAccessToken"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fbLogin"
+              }
+            }
+          },
+          "description": "Access token object to login",
+          "required": true
+        }
+      }
+    },
+    "/auth/jwt": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login with existing jwt token in headers in format of { Authorization: Bearer <token> }",
+        "operationId": "jwtLoginIn",
+        "responses": {
+          "200": {
+            "description": "Log in successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jwtLoginSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid jwt token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notAuthorizedError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "create new user",
+        "description": "Only accessible with admin user",
+        "operationId": "createUser",
+        "responses": {
+          "200": {
+            "description": "Create user info successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createUserSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User exists or not authorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/userExist"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createUserInfo"
+              }
+            }
+          },
+          "description": "user object to create new user",
+          "required": true
+        }
+      }
+    },
+    "/user/{userId}": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The id of user to be searched"
+            }
+          }
+        ],
+        "summary": "Get particular user info",
+        "operationId": "getUser",
+        "responses": {
+          "200": {
+            "description": "Get user info successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getUserSuccess"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getUserNoUser"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "user"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The id of user to be updated"
+            }
+          }
+        ],
+        "summary": "Update user info",
+        "operationId": "updateUser",
+        "responses": {
+          "201": {
+            "description": "Update user info successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/updateUserSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User info used or not authorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/notAuthorizedError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/userInfoUsed"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/updateUserInfo"
+              }
+            }
+          },
+          "description": "user object to update new user",
+          "required": true
+        }
+      },
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The id of user to be deleted"
+            }
+          }
+        ],
+        "description": "Only accessible with admin user",
+        "summary": "Delete user",
+        "operationId": "deleteUser",
+        "responses": {
+          "200": {
+            "description": "delete user info successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/deleteUserSuccess"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/alluser": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get multiple user info",
+        "operationId": "getAllUser",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "description": "The name of user to be searched",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderby",
+            "description": "The order of users to be arranged",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "description": "The integer of users to be return, default value is 10",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "description": "The offset of users to be return, default value is 0",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includedeleted",
+            "description": "To include the deleted user, default behaviour is not returning.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get user info successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getAllUserSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No user found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getUserNoUser"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions": {
+      "post": {
+        "tags": [
+          "questions"
+        ],
+        "description": "Only accessible with admin user",
+        "summary": "Create question",
+        "operationId": "createQuestion",
+        "responses": {
+          "200": {
+            "description": "Create question successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createQuestionSuccess"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createQuestion"
+              }
+            }
+          },
+          "description": "Question object to create new question",
+          "required": true
+        }
+      }
+    },
+    "/questions/allquestion": {
+      "get": {
+        "tags": [
+          "questions"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "includeExpired",
+            "description": "To include the deleted question and options if pass true as value",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "description": "Number of questions to be returned.",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "description": "Offset of questions to be returned.",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "description": "accessible by both user and admin user",
+        "summary": "Get all questions",
+        "operationId": "getAllQuestion",
+        "responses": {
+          "200": {
+            "description": "Get question successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getAllQuestionSuccess"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cannot find question",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/noQuestion"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/{questionId}": {
+      "patch": {
+        "tags": [
+          "questions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "questionId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of question to be deleted"
+            }
+          }
+        ],
+        "description": "Only accessible with admin user",
+        "summary": "Update question",
+        "operationId": "updateQuestion",
+        "responses": {
+          "200": {
+            "description": "Update question successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/updateQuestionSuccess"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/updateQuestion"
+              }
+            }
+          },
+          "description": "Question object to update specific question",
+          "required": true
+        }
+      },
+      "delete": {
+        "tags": [
+          "questions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "questionId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of question to be deleted"
+            }
+          }
+        ],
+        "description": "Only accessible with admin user",
+        "summary": "Delete question",
+        "operationId": "deleteQuestion",
+        "responses": {
+          "200": {
+            "description": "Delete question successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/updateQuestionSuccess"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "questions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "questionId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of question to be deleted"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeExpired",
+            "description": "To include the deleted question and options if pass true as value",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "description": "accessible by both user and admin user",
+        "summary": "Get particular question",
+        "operationId": "getQuestion",
+        "responses": {
+          "200": {
+            "description": "Get question successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getQuestionSuccess"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cannot find question",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/noQuestion"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/{questionId}/option": {
+      "post": {
+        "tags": [
+          "questions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "questionId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of question to be insert new option."
+            }
+          }
+        ],
+        "description": "Only accessible with admin user",
+        "summary": "Insert new option",
+        "operationId": "insertOption",
+        "responses": {
+          "200": {
+            "description": "Insert option successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/insertOtionSuccess"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/insertOption"
+              }
+            }
+          },
+          "description": "Question object to create new question",
+          "required": true
+        }
+      }
+    },
+    "/questionhistory/{userId}": {
+      "post": {
+        "tags": [
+          "questionhistory"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of user to post question history"
+            }
+          }
+        ],
+        "description": "Accessible with both user and admin user.\n No user id should be included in path. Instead, pass jwt token in header for user recognition.",
+        "summary": "Create question history",
+        "operationId": "createQuestionhistory",
+        "responses": {
+          "200": {
+            "description": "Post question history successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "POST_HISTORY_SUCCESSFUL"
+                    },
+                    "message": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "example": "INFORMATION_SUBMITTED_TO_ELASTIC"
+                        },
+                        "implication": {
+                          "type": "string",
+                          "example": "test implication",
+                          "description": "The implication of chosen option."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Post question history fail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "POST_HISTORY_FAIL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid option id posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "POST_HISTORY_INVALID_OPTION"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "questionId": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "optionId": {
+                    "type": "integer",
+                    "example": 2
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        }
+      },
+      "delete": {
+        "tags": [
+          "questionhistory"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of user to delete question history"
+            }
+          }
+        ],
+        "description": "Accessible with both user and admin user",
+        "summary": "Delete question history",
+        "operationId": "deletestionhistory",
+        "responses": {
+          "200": {
+            "description": "Delete question history successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "DELETE_HISTORY_SUCCESSFUL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Delete question history fail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "DELETE_HISTORY_FAIL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "questionhistory"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of user to get question history"
+            }
+          }
+        ],
+        "description": "Accessible with both user and admin user",
+        "summary": "Get question history",
+        "operationId": "getQuestionhistory",
+        "responses": {
+          "200": {
+            "description": "Get question history successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getQuestionHistorySuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Get question history fail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "GET_QUESTION_FAIL_NO_HISTORY"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/databaseError"
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload/event": {
+      "post": {
+        "tags": [
+          "upload"
+        ],
+        "description": "Accessible with both user and admin user",
+        "summary": "Upload file (converted to base64String prior to post) for event",
+        "operationId": "uploadEvent",
+        "responses": {
+          "200": {
+            "description": "Upload file successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "wine": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "event/583/bb6/1523928576299.png"
+                      }
+                    },
+                    "gallery": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "event/583/bb6/1523928576400.png"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Upload evnet photos fail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/component/schema/uploadError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gallery": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII"
+                    }
+                  },
+                  "wine": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/upload/profile": {
+      "post": {
+        "tags": [
+          "upload"
+        ],
+        "description": "Accessible with both user and admin user",
+        "summary": "Upload file (converted to base64String prior to post) for user profile",
+        "operationId": "uploadPropic",
+        "responses": {
+          "200": {
+            "description": "Upload file successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "picture": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "propic/583/bb6/1523928576400.png"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Upload profile picture fail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/component/schema/uploadError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "picture": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "example": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/event": {
+      "post": {
+        "tags": [
+          "event"
+        ],
+        "description": "Accessible with both user and admin user",
+        "summary": "Post event",
+        "operationId": "postEvent",
+        "responses": {
+          "200": {
+            "description": "Post event successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "POST_EVENT_SUCCESSFUL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Cannot written into database",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "DATABASE_ERROR"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/eventInfo"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/event/{eventId}": {
+      "get": {
+        "tags": [
+          "event"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of event to get"
+            }
+          }
+        ],
+        "description": "Accessible with both user and admin user",
+        "summary": "Get event details",
+        "operationId": "getEvent",
+        "responses": {
+          "200": {
+            "description": "Get particular event successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getEventSuccess"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Cannot written into database",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "DATABASE_ERROR"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "event"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of event to delete"
+            }
+          }
+        ],
+        "description": "Accessible with event creator only",
+        "summary": "Delete event",
+        "operationId": "deleteEvent",
+        "responses": {
+          "200": {
+            "description": "Delete particular event successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "DELETE_EVENT_SUCCESSFUL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access the api with non-creator",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notAuthorizedError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Cannot written into database",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "DATABASE_ERROR"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "event"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Id of event to patch"
+            }
+          }
+        ],
+        "description": "Accessible with both user and admin user",
+        "summary": "Update event details",
+        "operationId": "getEvent",
+        "responses": {
+          "200": {
+            "description": "Update particular event successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "UPDATE_EVENT_SUCCESSFUL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access the api with non-creator",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notAuthorizedError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Cannot written into database",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "DATABASE_ERROR"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/eventInfo"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/eventjournal": {
+      "get": {
+        "tags": [
+          "eventjournal"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "role",
+            "description": "Return events which user act as creator or participant, default value will not discriminate.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "title",
+            "description": "Return events with certain event title, search in database with %{title}%.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "description": "Return events with specific date.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "description": "Return events with specific tag, search in database with %{tag}%.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderby",
+            "description": "Return events order by specific value, default is order by date desc. event_id, event_title, date are valid values.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "deleted",
+            "description": "Return events which inculde deleted event if passed true.",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "description": "The integer of users to be return, default value is 5",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "description": "The offset of users to be return, default value is 0",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "description": "Accessible with both user and admin user",
+        "summary": "Get event journal",
+        "operationId": "getEventJournal",
+        "responses": {
+          "200": {
+            "description": "Access the api with non-creator",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getEventJournalSuccess"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Cannot written into database",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "DATABASE_ERROR"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "520": {
+            "description": "Unknown error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/unknownError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "JWT": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "JWT": {
+        "description": "",
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "signUp": {
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "username"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "testUser@email.com"
+          },
+          "username": {
+            "type": "string",
+            "example": "john_doe"
+          },
+          "password": {
+            "type": "string",
+            "example": "password1"
+          }
+        }
+      },
+      "login": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "testUser@email.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password1"
+          }
+        }
+      },
+      "fbLogin": {
+        "type": "object",
+        "required": [
+          "accessToken"
+        ],
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "EAAdOLKLZAWIYBALZCWtZB1qSUhKxjL1CCfCCXluXhZBto7X6ZAaZCcJaMZCfWdj0Wnun4UvEWNL7mQ1OMDIMu82BrWW7xYQ7p96XR8474ZB235ZBCjwGGtldGOPhP5HkC8ZCGF08U7sajZCaQZB42NUVGy38hchLR8AJcelRWLVfvXfskosCo1CAFZCEDYGkJxlCUPMgskWCPy9RtowitaeuaJ12lMG0MhkUiZAc3a1Vjck0D0clTyZAV0IK4Tw"
+          }
+        }
+      },
+      "jwtLogin": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiZmlyc3RfbG9naW4iOnRydWV9.a2wW4ZvBNlaUTA2FNmnrNCsIRs3hZe6lArsZ51JIl0Z6HfQ29MUsdbuw6Gb1FI78Lwn6jwVwXUi6psh6gxmfgyCsYZxRmLSme_gdTKc5EKca_r8GCqmrXkVzLvWFxCz-8kYXMdSGfZ3VTKWMz-NIQb2Jy1X8y1GO2666GRBI5PzxzvtTl93orcH1h6OaZVqyELZL8pTRBibTea8C8JwOq1YDaIODsQ8uGrL5dRhzSQm1QfUpuXnh0uwEF1z1nQctKsGJWqHl8LlbNh0NDmiIRtXcLqFxCbF49NkTq3k2CmazcN-0QSwo0F7jTWUaL4PEcbapwuz9jGNbW3uox8n14AeELK1rq5769c3OBd-t95mrB-jGP7FqKqihUB6mWdQ5MwuAOjVRyn9YLruM9MqFNTCeQAQaqGOqcnqV917UHanrlt4hDKMvZWygXb0NWWQvi2Wir3l-pvCW5MF8khlsRYDMMijrBY0KRvl79cddJMTmPtWHaZcT5y3U2EdEmRXEXJXFCgJ4Bcx8OTReT4dAgkN1sbnmt9TRh-Tm80aardtszKPZwrS5Neysfe325ADd8BRGtWYCdZZNkqTdEy1kyZsYiLqacYzCutjPXIkOaGV3l2uLBKqEMqr9yeDaoU8PkqKiEvWkbHeGHZbTuh_xhs8QWxYDVNoEBDHmDH4_wag"
+          }
+        }
+      },
+      "signUpSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "SIGNUP_SUCCESSFUL"
+          }
+        }
+      },
+      "jwtLoginSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "LOGIN_SUCCESSFUL"
+          }
+        }
+      },
+      "loginSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "LOGIN_SUCCESSFUL"
+          },
+          "token": {
+            "type": "string",
+            "example": "ahwoivwoihcnoi2hoijoaij2lnlsdknclkenqedqcq.vrjkrvn"
+          }
+        }
+      },
+      "signupUserExist": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "SIGNUP_FAIL_USER_EXIST"
+          }
+        }
+      },
+      "invalidInput": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "INVALID_INPUT"
+          }
+        }
+      },
+      "loginNoUser": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "LOGIN_FAIL_NO_USER"
+          }
+        }
+      },
+      "loginInvalidPWD": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "INVALID_PASSWORD"
+          }
+        }
+      },
+      "loginNoAccessToken": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "LOGIN_FAIL_NO_ACCESSTOKEN"
+          }
+        }
+      },
+      "loginUserDeleted": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "LOGIN_FAIL_USER_DELETED"
+          }
+        }
+      },
+      "getUserNoUser": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "GET_USER_FAIL_NO_USER"
+          }
+        }
+      },
+      "getUserSuccess": {
+        "$ref": "#/components/schemas/getUserInfo"
+      },
+      "getAllUserSuccess": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "example": 1
+            },
+            "username": {
+              "type": "string",
+              "example": "John_doe"
+            },
+            "firstname": {
+              "type": "string",
+              "example": "John"
+            },
+            "lastname": {
+              "type": "string",
+              "example": "Doe"
+            },
+            "email": {
+              "type": "string",
+              "example": "testUser@email.com"
+            },
+            "password": {
+              "type": "string",
+              "example": "$2a$10$2DXMPffbCF3K2KLph9OmFO89QM2NrvB8mBQCxW4js3BBrW8/hDjb2"
+            },
+            "role": {
+              "type": "string",
+              "example": "local"
+            },
+            "socialId": {
+              "type": "string",
+              "example": "aifnwevehiuwgvwiuenakwugcig1281246682100810jmal."
+            },
+            "picture": {
+              "type": "string",
+              "example": "profile/d6f/034/1524738815.jpg"
+            },
+            "birthday": {
+              "type": "string",
+              "example": "1993-04-24"
+            },
+            "sex": {
+              "type": "integer",
+              "example": 0,
+              "description": "0 for male, 1 for woman, 9 for unknwon"
+            },
+            "first_login": {
+              "type": "boolean",
+              "example": true
+            },
+            "deleted": {
+              "type": "boolean",
+              "example": false
+            }
+          }
+        }
+      },
+      "createUserSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "CREATE_USER_SUCCESSFUL"
+          },
+          "id": {
+            "type": "integer",
+            "example": 2
+          }
+        }
+      },
+      "updateUserSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "UPDATE_USER_SUCCESSFUL"
+          }
+        }
+      },
+      "deleteUserSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "DELETE_USER_SUCCESSFUL"
+          }
+        }
+      },
+      "createQuestionSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "CREATE_QUESTION_SUCCESSFUL"
+          },
+          "id": {
+            "type": "integer",
+            "example": "1"
+          }
+        }
+      },
+      "insertOtionSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "CREATE_OPTION_SUCCESSFUL"
+          }
+        }
+      },
+      "getQuestionSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "READ_QUESTION_SUCCESSFUL"
+          },
+          "question": {
+            "type": "object",
+            "properties": {
+              "question_id": {
+                "type": "integer",
+                "example": 1
+              },
+              "text": {
+                "type": "string",
+                "example": "Would you prefer.....?"
+              },
+              "expired": {
+                "type": "boolean",
+                "example": false
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/option"
+                }
+              }
+            }
+          }
+        }
+      },
+      "getAllQuestionSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "READ_QUESTION_SUCCESSFUL"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "question_id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "text": {
+                  "type": "string",
+                  "example": "Would you prefer.....?"
+                },
+                "expired": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/option"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "updateQuestionSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": {
+              "oneOf": [
+                "UPDATE_QUESTION_SUCCESSFUL",
+                "UPDATE_QUESTION_NO_ENTITY"
+              ]
+            }
+          }
+        }
+      },
+      "noQuestion": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "READ_QUESTION_FAIL_NO_QUESTTION"
+          }
+        }
+      },
+      "option": {
+        "type": "object",
+        "properties": {
+          "option_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "text": {
+            "type": "string",
+            "example": "Black coffee"
+          },
+          "implication": {
+            "type": "string",
+            "example": "You may enjoy bitter taste."
+          },
+          "expired": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "insertOption": {
+        "type": "object",
+        "properties": {
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "example": "Black coffee"
+                },
+                "implication": {
+                  "type": "string",
+                  "example": "You may enjoy bitter taste."
+                }
+              }
+            }
+          }
+        }
+      },
+      "userInfoUsed": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "UPDATED_USER_FAIL_SOCIALID_OR_EMAIL_USED"
+          }
+        }
+      },
+      "userExist": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "CREATE_USER_FAIL_USER_EXIST"
+          }
+        }
+      },
+      "notAuthorizedError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "NOT_AUTHORIZED"
+          }
+        }
+      },
+      "unknownError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "UNKNOWN_ERROR"
+          }
+        }
+      },
+      "uploadError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "UPLOAD_FAIL"
+          }
+        }
+      },
+      "databaseError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "DATABASE_ERROR"
+          }
+        }
+      },
+      "getUserInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "username": {
+            "type": "string",
+            "example": "John_doe"
+          },
+          "firstname": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastname": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "email": {
+            "type": "string",
+            "example": "testUser@email.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "$2a$10$2DXMPffbCF3K2KLph9OmFO89QM2NrvB8mBQCxW4js3BBrW8/hDjb2"
+          },
+          "role": {
+            "type": "string",
+            "example": "user"
+          },
+          "provider": {
+            "type": "string",
+            "example": "local"
+          },
+          "socialId": {
+            "type": "string",
+            "example": "aifnwevehiuwgvwiuenakwugcig1281246682100810jmal."
+          },
+          "picture": {
+            "type": "string",
+            "example": "profile/d6f/034/1524738815.jpg"
+          },
+          "birthday": {
+            "type": "string",
+            "example": "1993-04-24"
+          },
+          "sex": {
+            "type": "integer",
+            "example": 0,
+            "description": "0 for male, 1 for woman, 9 for unknwon"
+          },
+          "first_login": {
+            "type": "boolean",
+            "example": true
+          },
+          "deleted": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "createUserInfo": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "John_doe"
+          },
+          "firstname": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastname": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "email": {
+            "type": "string",
+            "example": "testUser@email.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "$2a$10$2DXMPffbCF3K2KLph9OmFO89QM2NrvB8mBQCxW4js3BBrW8/hDjb2"
+          },
+          "role": {
+            "type": "string",
+            "example": "user"
+          },
+          "provider": {
+            "type": "string",
+            "example": "local"
+          },
+          "socialId": {
+            "type": "string",
+            "example": "aifnwevehiuwgvwiuenakwugcig1281246682100810jmal."
+          },
+          "picture": {
+            "type": "string",
+            "example": "profile/d6f/034/1524738815.jpg"
+          },
+          "birthday": {
+            "type": "string",
+            "example": "1993-04-24"
+          },
+          "sex": {
+            "type": "integer",
+            "example": 0,
+            "description": "0 for male, 1 for woman, 9 for unknwon"
+          },
+          "first_login": {
+            "type": "boolean",
+            "example": true,
+            "description": "default value is true"
+          },
+          "deleted": {
+            "type": "boolean",
+            "example": false,
+            "description": "default value is false"
+          }
+        },
+        "required": [
+          "username",
+          "provider",
+          "role"
+        ]
+      },
+      "updateUserInfo": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "John_doe"
+          },
+          "firstname": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastname": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "email": {
+            "type": "string",
+            "example": "testUser@email.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password1",
+            "description": "Password will be bcrypted before saving in the database."
+          },
+          "role": {
+            "type": "string",
+            "example": "user",
+            "description": "Can only be patched by admin user only"
+          },
+          "provider": {
+            "type": "string",
+            "example": "local",
+            "description": "Can only be patched by admin user only"
+          },
+          "socialId": {
+            "type": "string",
+            "example": "aifnwevehiuwgvwiuenakwugcig1281246682100810jmal."
+          },
+          "picture": {
+            "type": "string",
+            "example": "profile/d6f/034/1524738815.jpg"
+          },
+          "birthday": {
+            "type": "string",
+            "example": "1993-04-24"
+          },
+          "sex": {
+            "type": "integer",
+            "example": 0,
+            "description": "0 for male, 1 for woman, 9 for unknwon"
+          },
+          "first_login": {
+            "type": "boolean",
+            "example": true
+          },
+          "deleted": {
+            "type": "boolean",
+            "example": false,
+            "description": "Can only be patched by admin user only"
+          }
+        },
+        "required": [
+          "username",
+          "provider",
+          "role"
+        ]
+      },
+      "createQuestion": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "example": "Would you prefer.....?"
+              }
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "example": "black coffee"
+                },
+                "implication": {
+                  "type": "string",
+                  "example": "You may enjoy the bitter taste."
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "question",
+          "options"
+        ]
+      },
+      "updateQuestion": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "example": "Would you prefer.....?"
+              },
+              "expired": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "required": [
+              "text"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "option_id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "text": {
+                  "type": "string",
+                  "example": "black coffee"
+                },
+                "implication": {
+                  "type": "string",
+                  "example": "You may enjoy the bitter taste."
+                },
+                "expired": {
+                  "type": "boolean",
+                  "example": true
+                }
+              },
+              "required": [
+                "option_id",
+                "text"
+              ]
+            }
+          }
+        },
+        "required": [
+          "question"
+        ]
+      },
+      "getQuestionHistorySuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "GET_HISTORY_SUCCESSFUL"
+          },
+          "userId": {
+            "type": "integer",
+            "example": 1
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "question_id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "text": {
+                  "type": "string",
+                  "example": "Would you prefer...?"
+                },
+                "expired": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "choice": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "option_id": {
+                        "type": "integer",
+                        "example": 2
+                      },
+                      "expired": {
+                        "type": "boolean",
+                        "example": false
+                      },
+                      "option_text": {
+                        "type": "string",
+                        "example": "Black coffee"
+                      },
+                      "implication": {
+                        "type": "string",
+                        "example": "You may enjoy bitter taste"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "example": "2018-04-25T11:06:34.002Z"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "example": "2018-04-25T11:06:34.002Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "eventInfo": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Test title"
+          },
+          "date": {
+            "type": "string",
+            "example": "2018-04-05"
+          },
+          "description": {
+            "type": "string",
+            "example": "No description"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "example": "test user"
+                },
+                {
+                  "type": "integer",
+                  "example": 1
+                }
+              ]
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "example": "test tag"
+                },
+                {
+                  "type": "integer",
+                  "example": 1
+                }
+              ]
+            }
+          },
+          "wines": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "example": "test wine"
+                },
+                {
+                  "type": "integer",
+                  "example": 1
+                }
+              ]
+            }
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "event/6bb/eff/1529905594775.jpg"
+            }
+          },
+          "winePhotos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "event/6bb/eff/1529905580000.jpg"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "date",
+          "description",
+          "participant",
+          "tags",
+          "wines",
+          "photos",
+          "winePhotos"
+        ]
+      },
+      "getEventSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "GET_EVENT_SUCCESSFUL"
+          },
+          "event": {
+            "type": "object",
+            "properties": {
+              "event_id": {
+                "type": "integer",
+                "example": 1
+              },
+              "event_title": {
+                "type": "string",
+                "example": "Test title"
+              },
+              "date": {
+                "type": "string",
+                "example": "2018-04-05"
+              },
+              "descrption": {
+                "type": "string",
+                "example": "No description"
+              },
+              "deleted": {
+                "type": "boolean",
+                "example": false
+              },
+              "participants": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "username": {
+                      "type": "string",
+                      "example": "test user"
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "picture": {
+                      "type": "string",
+                      "example": "profile/54e/6c1/1522905594775.jpg"
+                    }
+                  }
+                }
+              },
+              "creators": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "username": {
+                      "type": "string",
+                      "example": "test user"
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "picture": {
+                      "type": "string",
+                      "example": "profile/54e/6c1/1522905594775.jpg"
+                    }
+                  }
+                }
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tag_id": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "tag_name": {
+                      "type": "string",
+                      "example": "test tag"
+                    }
+                  }
+                }
+              },
+              "wines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "wine_id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "wine_name": {
+                      "type": "string",
+                      "example": "test wine"
+                    },
+                    "photo_path": {
+                      "type": "string",
+                      "example": "event/6dd/2ee/1522905594775.jpg"
+                    }
+                  }
+                }
+              },
+              "gallery": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "photo_path": {
+                      "type": "string",
+                      "example": "event/6dd/2ee/1522905594775.jpg"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "getEventJournalSuccess": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "GET_EVENT_SUCCESSFUL"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "event_title": {
+                  "type": "string",
+                  "example": "Test title"
+                },
+                "date": {
+                  "type": "string",
+                  "example": "2018-04-05"
+                },
+                "descrption": {
+                  "type": "string",
+                  "example": "No description"
+                },
+                "deleted": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "participants": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "type": "string",
+                        "example": "test user"
+                      },
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "picture": {
+                        "type": "string",
+                        "example": "profile/54e/6c1/1522905594775.jpg"
+                      }
+                    }
+                  }
+                },
+                "creators": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "username": {
+                        "type": "string",
+                        "example": "test user"
+                      },
+                      "id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "picture": {
+                        "type": "string",
+                        "example": "profile/54e/6c1/1522905594775.jpg"
+                      }
+                    }
+                  }
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tag_id": {
+                        "type": "integer",
+                        "example": 2
+                      },
+                      "tag_name": {
+                        "type": "string",
+                        "example": "test tag"
+                      }
+                    }
+                  }
+                },
+                "wines": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "wine_id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "wine_name": {
+                        "type": "string",
+                        "example": "test wine"
+                      },
+                      "photo_path": {
+                        "type": "string",
+                        "example": "event/6dd/2ee/1522905594775.jpg"
+                      }
+                    }
+                  }
+                },
+                "gallery": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "photo_path": {
+                        "type": "string",
+                        "example": "event/6dd/2ee/1522905594775.jpg"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

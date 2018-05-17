@@ -1,5 +1,6 @@
 const express = require('express');
-const QUESTION_HISTORY_STATUS = require('../constant/questionHistoryConstant')
+const errorHandler = require('../utils/errorHandler');
+const queryStringValidation = require('../utils/queryValidation');
 
 class QuestionHistoryRouter {
     constructor(questionHistoryService) {
@@ -8,6 +9,7 @@ class QuestionHistoryRouter {
 
     router() {
         let router = express.Router();
+        router.get('/meta', this.getmeta.bind(this));
         router.get('/:userId', this.getHistory.bind(this));
         router.post('/:userId', this.postHistory.bind(this));
         router.delete('/:userId', this.delHistory.bind(this));
@@ -15,42 +17,32 @@ class QuestionHistoryRouter {
     }
 
     getHistory(req, res) {
-        return this.questionHistoryService.getHistory(req.params.userId)
+        let queryArray = queryStringValidation(req.query, ['includeExpired', 'limit', 'offset']);
+        return this.questionHistoryService.getHistory(req, queryArray)
             .then(userHistory => res.status(200).json(userHistory))
-            .catch(err => res.json(this.errorHandle(res, err)));
+            .catch(err => errorHandler(res, err));
+    }
+
+    getmeta(req, res) {
+        return this.questionHistoryService.getOptionMeta([47,48])
+            .then(userHistory => res.status(200).json(userHistory))
+            .catch(err => errorHandler(res, err));
     }
 
     postHistory(req, res) {
-        return this.questionHistoryService.postHistory(req.params.userId, req.body)
+        return this.questionHistoryService.postHistory(req)
             .then(status => res.status(200).json(status))
-            .catch(err => res.json(this.errorHandle(res, err)));
+            .catch(err => {
+                errorHandler(res, err)
+            });
     }
 
     delHistory(req, res) {
-        return this.questionHistoryService.delHistory(req.params.userId)
+        return this.questionHistoryService.delHistory(req)
             .then(status => res.status(200).json(status))
-            .catch(err => res.json(this.errorHandle(res, err)));
+            .catch(err => errorHandler(res, err));
     }
 
-    errorHandle(res, err) {
-        switch (err.message) {
-            case QUESTION_HISTORY_STATUS.POST_HISTORY_FAIL:
-            case QUESTION_HISTORY_STATUS.GET_HISTORY_FAIL:
-            case QUESTION_HISTORY_STATUS.DELETE_HISTORY_FAIL: {
-                res.status(404).json({ status: err.message });
-                break;
-            };
-
-            case QUESTION_HISTORY_STATUS.SERVER_ERROR: {
-                res.status(520).json({ status: err.message });
-                break;
-            };
-            default: {
-                console.log(err);
-                throw new Error('QUESTION_HISTORY_UNKNOWN_ERROR');
-            };
-        }
-    }
 }
 
 module.exports = QuestionHistoryRouter;
